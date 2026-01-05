@@ -34,8 +34,53 @@
 </head>
 <body>
     <iframe src="https://script.google.com/macros/s/AKfycbwippJEFMsF4Mkpa_72nexdFykWVFV2YZXAjMsjOx7OvNdsczXePSEr0QKLH5M5lM0z/exec" allow="geolocation; camera; microphone"></iframe>
+<script>
+  // 1. ลงทะเบียน Service Worker (จำเป็นสำหรับ PWA)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('Service Worker Registered'));
+  }
+
+  // 2. Logic สำหรับปุ่ม "ติดตั้งลงเครื่อง"
+  let deferredPrompt;
+  
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // ป้องกันไม่ให้ Chrome โชว์แถบอัตโนมัติ (เราจะโชว์เอง)
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // เรียกฟังก์ชันแสดงปุ่มติดตั้ง (ท่านต้องสร้างปุ่มนี้ใน HTML)
+    showInstallPromotion(); 
+  });
+
+  function showInstallPromotion() {
+      // สร้างปุ่มติดตั้งลอยขึ้นมา หรือ แทรกในหน้า Login
+      // ตัวอย่าง: ใช้ SweetAlert ที่ท่านมีอยู่แล้ว
+      Swal.fire({
+          title: 'ติดตั้งแอป',
+          text: 'เพื่อความสะดวกในการใช้งานครั้งต่อไป',
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonText: 'ติดตั้งเลย',
+          cancelButtonText: 'ไว้ทีหลัง',
+          confirmButtonColor: '#0d6efd'
+      }).then((result) => {
+          if (result.isConfirmed) {
+              // สั่งให้ติดตั้ง
+              deferredPrompt.prompt();
+              deferredPrompt.userChoice.then((choiceResult) => {
+                  if (choiceResult.outcome === 'accepted') {
+                      console.log('User accepted the A2HS prompt');
+                  }
+                  deferredPrompt = null;
+              });
+          }
+      });
+  }
+</script>    
 </body>
 </html>
+
 
 
 
