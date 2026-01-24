@@ -537,9 +537,14 @@
   const API_URL = "https://script.google.com/macros/s/AKfycbwYa587lK3EQ39Do1k-Xoy97rmYdI2PS4koJDAixkO9zw6S2YqPLO6eVix9l-IEp2bC/exec" ; 
 
   const APP_CONFIG = {
-      COMPANY_NAME: 'วิสดอม ออโต้พาร์ท',
-      LOGO_HEADER: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
-      LOGO_LOGIN: 'https://drive.google.com/thumbnail?id=1RbfQoTcWEU6Y4USFIV9XjmAjgpx87hvA&sz=w1000'
+      COMPANY_NAME: 'วิสดอม ออโต้พาร์ท จำกัด',
+      
+      // 1. โลโก้เล็ก (Header หน้า Dashboard)
+      LOGO_HEADER: 'https://drive.google.com/thumbnail?id=1RbfQoTcWEU6Y4USFIV9XjmAjgpx87hvA&sz=w1000', 
+      
+      // 2. โลโก้ใหญ่ (หน้า Login เหนือคำว่า "ลงเวลาทำงาน")
+      // ใส่ URL ของรูปใหญ่ที่ท่านต้องการตรงนี้
+      LOGO_LOGIN: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' 
   };
 
   // ==========================================
@@ -1573,4 +1578,5 @@ function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
 </script>
 
 </body>
+
 </html>
