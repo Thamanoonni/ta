@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Time Attendance</title>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -544,6 +548,36 @@
       COMPANY_NAME: 'วิสดอม ออโต้พาร์ท',
       LOGO_URL: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
   };
+
+// ลงทะเบียน Service Worker (จำเป็นสำหรับ PWA บน Android)
+  if ('serviceWorker' in navigator) {
+     // สร้างไฟล์ sw.js ว่างๆ ไว้ใน Folder เดียวกันด้วยก็ได้ครับ หรือใช้แบบ Minimal
+     navigator.serviceWorker.register('sw.js').then(function() { console.log('Service Worker Registered'); });
+  }
+
+  // ดักจับ Event เพื่อโชว์ปุ่มติดตั้ง
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // ตรงนี้ท่านสามารถสร้างปุ่ม "ติดตั้งแอป" ให้ User กดได้
+    // ตัวอย่าง: เรียก SweetAlert ให้กดติดตั้ง
+    Swal.fire({
+      title: 'ติดตั้งแอป',
+      text: 'เพิ่มลงหน้าจอหลักเพื่อใช้งานเต็มจอ',
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'ติดตั้งเลย'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          deferredPrompt = null;
+        });
+      }
+    });
+  });
 
   // ==========================================
   // 2. CORE LOGIC
