@@ -1,27 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
+  <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Time Attendance</title>
-
-  <link rel="manifest" href="manifest.json">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   
   <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-  
   <script src="https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js"></script>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
-  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" type="image/x-icon">
+  <link rel="icon" href="https://thamanoonni.github.io/ta/favicon.ico" type="image/x-icon">
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -212,7 +206,6 @@
             
             <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
                 <img id="footerLogo" src="" style="height: 30px; width: auto; display: none;">
-                
                 <span class="fw-bold text-dark" style="font-size: 0.95rem; letter-spacing: 0.3px;">
                     <span class="companyNameText">Loading...</span>
                 </span>
@@ -537,12 +530,11 @@
 
 <script>
   // ==========================================
-  // 1. CONFIGURATION (ตั้งค่าที่นี่)
+  // 1. CONFIGURATION
   // ==========================================
   
-  // *** สำคัญ: เอา URL ที่ได้จากการ Deploy Code.gs (เลือก Anyone) มาใส่ตรงนี้ ***
-  //const API_URL = "https://script.google.com/macros/s/AKfycbwippJEFMsF4Mkpa_72nexdFykWVFV2YZXAjMsjOx7OvNdsczXePSEr0QKLH5M5lM0z/exec"; 
-  const API_URL = "https://script.google.com/macros/s/AKfycbz_oc01CH9M06vnw39jCjvy2VIYi54kiE29E0xeyAqqyYrTFkcb9rF-aQelzTTp9Ngt/exec" ;
+  // *** สำคัญ: นำ URL ที่ได้จาก New Deployment (Code.gs) มาใส่ตรงนี้ ***
+  const API_URL = "https://script.google.com/macros/s/AKfycbwYa587lK3EQ39Do1k-Xoy97rmYdI2PS4koJDAixkO9zw6S2YqPLO6eVix9l-IEp2bC/exec" ; 
 
   const APP_CONFIG = {
       COMPANY_NAME: 'วิสดอม ออโต้พาร์ท',
@@ -554,37 +546,6 @@
       // ใส่ URL ของรูปใหญ่ที่ท่านต้องการตรงนี้
       LOGO_LOGIN: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' 
   };
-
-// ลงทะเบียน Service Worker (จำเป็นสำหรับ PWA บน Android)
-  if ('serviceWorker' in navigator) {
-     // สร้างไฟล์ sw.js ว่างๆ ไว้ใน Folder เดียวกันด้วยก็ได้ครับ หรือใช้แบบ Minimal
-     navigator.serviceWorker.register('sw.js').then(function() { console.log('Service Worker Registered'); });
-  }
-
-  // ดักจับ Event เพื่อโชว์ปุ่มติดตั้ง
-  let deferredPrompt;
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    
-    // ตรงนี้ท่านสามารถสร้างปุ่ม "ติดตั้งแอป" ให้ User กดได้
-    // ตัวอย่าง: เรียก SweetAlert ให้กดติดตั้ง
-    Swal.fire({
-      title: 'ติดตั้งแอป',
-      text: 'เพิ่มลงหน้าจอหลักเพื่อใช้งานเต็มจอ',
-      icon: 'info',
-      showCancelButton: true,
-      confirmButtonText: 'ติดตั้งเลย'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then((choiceResult) => {
-          deferredPrompt = null;
-        });
-      }
-    });
-  });
-
   // ==========================================
   // 2. CORE LOGIC
   // ==========================================
@@ -612,7 +573,6 @@
 
   // --- INITIALIZATION ---
   document.addEventListener('DOMContentLoaded', async function() {
-    // ใส่ค่า Config ลงใน HTML
     setupUIFromConfig();
 
     var ua = navigator.userAgent || navigator.vendor || window.opera;
@@ -639,17 +599,14 @@
   });
 
   function setupUIFromConfig() {
-      // --- แก้ไขจุดนี้ ---
-      
-      // 1. หน้า Login (ใช้รูปใหญ่ LOGO_LOGIN)
-      document.getElementById('loginLogo').src = APP_CONFIG.LOGO_LOGIN; 
+      // Login Screen
+      document.getElementById('loginLogo').src = APP_CONFIG.LOGO_LOGIN;
       document.getElementById('loginLogo').style.display = 'inline-block';
       
-      // 2. Footer (โลโก้เล็ก)
       document.getElementById('footerLogo').src = APP_CONFIG.LOGO_HEADER;
       document.getElementById('footerLogo').style.display = 'block';
 
-      // 3. Header Dashboard (ใช้รูปเล็ก LOGO_HEADER)
+      // Header Dashboard
       document.getElementById('headerLogo').src = APP_CONFIG.LOGO_HEADER;
       document.getElementById('headerLogo').style.display = 'block';
 
@@ -658,9 +615,8 @@
       nameEls.forEach(el => el.innerText = APP_CONFIG.COMPANY_NAME);
   }
 
-  // --- API HANDLER (Replacement for google.script.run) ---
+  // --- API HANDLER (Main Fetch) ---
   async function callAPI(data, callback) {
-      // console.log("Calling API:", data.action);
       try {
           const response = await fetch(API_URL, {
               method: "POST",
@@ -701,7 +657,6 @@
           }).addTo(mapObj);
       }
       
-      // Changed to callAPI
       callAPI({ action: 'getEmpConfig', empId: currentUser }, function(config) {
           if (config && config.lat && config.lng) {
               targetLat = config.lat;
@@ -948,6 +903,12 @@ function loadHistory() {
         var list = document.getElementById('historyList'); 
         list.innerHTML = ''; 
         lastScanTime = null; 
+        if (res.status !== 'success') {
+             list.innerHTML = '<li class="list-group-item text-center text-danger">โหลดข้อมูลไม่สำเร็จ: ' + (res.message || 'Unknown Error') + '</li>';
+             isHistoryLoaded = true;
+             checkScanAvailability();
+             return;
+        }
         
         if(res.data.length === 0) { 
             list.innerHTML = '<li class="list-group-item text-center text-muted">ไม่พบประวัติการสแกน</li>'; 
@@ -1266,28 +1227,7 @@ function startFaceLoginWithBroadcast(msg, token, name, photo, allowedApps, sysCo
     if (video.dataset.intervalId) clearInterval(video.dataset.intervalId);
     document.getElementById('faceLoginModal').classList.add('hidden');
   }
-/*
-function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
-    var data = { 
-        action: 'registerDevice', 
-        empId: empId, 
-        deviceToken: getDeviceToken(), 
-        os: getMobileOS() 
-    };
-    callAPI(data, function(res) {}); // Fire and forget for registerDevice
 
-    Swal.fire({ icon: 'success', title: 'ยืนยันตัวตนสำเร็จ', text: 'ยินดีต้อนรับ ' + name, timer: 1500, showConfirmButton: false })
-    .then(() => { 
-        if (pendingBroadcastData.msg && pendingBroadcastData.msg.toString().trim() !== "") {
-            showBroadcast(pendingBroadcastData.msg, function() {
-                loginSuccess(empId, name, photo, allowedApps, sysConfig);
-                pendingBroadcastData = { msg: null, token: null, name: null, photo: null, allowedApps: null, sysConfig: null }; 
-            });
-        } else {
-            loginSuccess(empId, name, photo, allowedApps, sysConfig);
-        }
-    });
-} */
 function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
     // แสดง Loading ระหว่างตรวจสอบสถานะรหัสผ่าน
     Swal.fire({ title: 'กำลังตรวจสอบข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
@@ -1397,7 +1337,7 @@ function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
       var empId = document.getElementById('regEmpId').value; var fname = document.getElementById('regFname').value; var lname = document.getElementById('regLname').value; var dept = document.getElementById('regDept').value; var email = document.getElementById('regEmail').value; var pass = document.getElementById('regPass').value; var confirmPass = document.getElementById('regConfirmPass').value; 
       if (!empId || !fname || !lname || !dept || !email || !pass || !confirmPass) { Swal.fire('แจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบถ้วน', 'warning'); return; } 
       if (pass !== confirmPass) { Swal.fire('แจ้งเตือน', 'รหัสผ่านยืนยันไม่ตรงกัน', 'error'); return; } 
-      var data = { action: 'register', empId: empId, fname: fname, lname: lname, department: dept, email: email, password: pass, os: getMobileOS() }; tempEmail = data.email; 
+      var data = { action: 'register', empId: empId, fname: fname, lname: lname, department: dept, email: email, password: pass }; tempEmail = data.email; 
       callAPI(data, function(res) { if(res.status === 'success') { Swal.fire('สำเร็จ', res.message, 'success'); showOTP(); } else { Swal.fire('แจ้งเตือน', res.message, 'error'); } }); 
   }
   function doConfirmOTP() { callAPI({ action: 'confirmOTP', email: tempEmail, otp: document.getElementById('otpInput').value }, function(res) { if(res.status === 'success') { Swal.fire('สำเร็จ', 'ลงทะเบียนเรียบร้อย', 'success'); showLogin(); } else { Swal.fire('ผิดพลาด', res.message, 'error'); } }); }
@@ -1409,10 +1349,13 @@ function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
   function closeCamera() { var video = document.getElementById('videoFeed'); if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; } document.getElementById('cameraModal').style.display = 'none'; }
   function sendScanData(imageBase64) { if (navigator.geolocation) { navigator.geolocation.getCurrentPosition(function(position) { var data = { action: 'scan', empId: currentUser, clientDate: getLocalDateString(), lat: position.coords.latitude, lng: position.coords.longitude, imageBase64: imageBase64 }; callAPI(data, function(res) { Swal.close(); if(res.status === 'success') { Swal.fire('บันทึกสำเร็จ', 'เวลา: ' + res.time, 'success'); loadHistory(); } else { Swal.fire('Error', res.message, 'error'); } }); }, function(error) { Swal.fire('Location Error', 'กรุณาเปิด GPS', 'error'); }); } else { Swal.fire('Error', 'Browser ไม่รองรับ GPS', 'error'); } }
 
+
   // --- DASHBOARD LOGIC ---
   function loadStats() {
       var date = document.getElementById('statsDate').value;
       Swal.fire({ title: 'กำลังโหลด...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      
+      // *** แก้ไข: เปลี่ยนจาก google.script.run เป็น callAPI ***
       callAPI({ action: 'getStats', date: date }, function(res){
           Swal.close();
           if(res.status === 'success') { 
@@ -1452,6 +1395,111 @@ function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
           tr.innerHTML = `<td class="text-center">${photoHtml}</td><td><div class="fw-bold text-dark" style="font-size: 0.9rem;">${u.fname} ${u.lname}</div><div class="d-flex align-items-center"><span class="badge bg-light text-dark border me-1">${u.empId}</span></div><div class="text-primary fst-italic small">${u.dept}</div></td><td class="text-center">${statusBadge}</td><td class="text-center"><button class="btn btn-sm btn-outline-secondary rounded-circle" onclick="openUserModal('edit', '${u.empId}')"><i class="bi bi-pencil-fill"></i></button></td>`;
           tbody.appendChild(tr);
       });
+  }
+
+  function filterUserTable() {
+      var txt = document.getElementById('searchUser').value.toLowerCase().trim();
+      var deptFilter = document.getElementById('filterDept').value; 
+
+      var filtered = allUsersData.filter(u => {
+          var matchText = (String(u.empId).toLowerCase().includes(txt) || String(u.fname).toLowerCase().includes(txt));
+          var matchDept = (deptFilter === "" || u.dept === deptFilter);
+          return matchText && matchDept;
+      });
+      renderUserTable(filtered);
+  }
+
+  function openUserModal(mode, empId) {
+      if(!userModal) userModal = new bootstrap.Modal(document.getElementById('userFormModal'));
+      document.getElementById('formMode').value = mode;
+      
+      document.getElementById('userForm').reset();
+      document.getElementById('u_empId').readOnly = false;
+      document.getElementById('editTools').classList.add('hidden'); 
+      
+      document.getElementById('u_photoFile').value = '';
+      document.getElementById('u_currentPhotoId').value = '';
+      document.getElementById('u_previewImg').classList.add('hidden');
+      document.getElementById('u_noImageText').classList.remove('hidden');
+
+      renderSystemCheckboxes([]);
+
+      if(mode === 'add') {
+          document.getElementById('userModalTitle').innerHTML = 'เพิ่มพนักงาน';
+          document.getElementById('u_status').value = 'Active';
+      } else {
+          document.getElementById('userModalTitle').innerHTML = 'แก้ไขข้อมูล';
+          document.getElementById('editTools').classList.remove('hidden');
+          document.getElementById('u_empId').readOnly = true; 
+          
+          var u = allUsersData.find(x => String(x.empId) === String(empId));
+          if(u) {
+              document.getElementById('u_empId').value = u.empId;
+              document.getElementById('u_fname').value = u.fname;
+              document.getElementById('u_lname').value = u.lname;
+              document.getElementById('u_email').value = u.email;
+              document.getElementById('u_dept').value = u.dept;
+              document.getElementById('u_status').value = u.status;
+              if(u.startDate) { 
+                  try {
+                      var d = new Date(u.startDate);
+                      var yyyy = d.getFullYear();
+                      var mm = String(d.getMonth() + 1).padStart(2, '0');
+                      var dd = String(d.getDate()).padStart(2, '0');
+                      document.getElementById('u_startDate').value = `${yyyy}-${mm}-${dd}`;
+                  } catch(e){}
+              }
+
+              if(u.photoId) {
+                  document.getElementById('u_currentPhotoId').value = u.photoId;
+                  document.getElementById('u_previewImg').src = "https://drive.google.com/thumbnail?id=" + u.photoId + "&sz=s200";
+                  document.getElementById('u_previewImg').classList.remove('hidden');
+                  document.getElementById('u_noImageText').classList.add('hidden');
+              }
+
+              var sysString = u.allowedSystems ? String(u.allowedSystems) : '';
+              var userSystems = sysString.split(',').map(s => s.trim()); 
+              
+              renderSystemCheckboxes(userSystems);
+          }
+      }
+      userModal.show();
+  }
+
+  function renderSystemCheckboxes(userSystems) {
+      var container = document.getElementById('systemCheckboxContainer');
+      container.innerHTML = '';
+      
+      systemConfigList.forEach(sys => {
+          var isChecked = userSystems.includes(sys.id) || userSystems.includes('All') ? 'checked' : '';
+          var html = `
+              <div class="form-check">
+                  <input class="form-check-input system-check" type="checkbox" value="${sys.id}" id="sys_${sys.id}" ${isChecked}>
+                  <label class="form-check-label small" for="sys_${sys.id}">
+                      ${sys.name}
+                  </label>
+              </div>
+          `;
+          container.innerHTML += html;
+      });
+  }
+
+  function toggleAllSystems() {
+      var isAll = document.getElementById('chk_AllSystems').checked;
+      var checkboxes = document.querySelectorAll('.system-check');
+      checkboxes.forEach(cb => cb.checked = isAll);
+  }
+
+  function previewImage(input) {
+      if (input.files && input.files[0]) {
+          var reader = new FileReader();
+          reader.onload = function(e) {
+              document.getElementById('u_previewImg').src = e.target.result;
+              document.getElementById('u_previewImg').classList.remove('hidden');
+              document.getElementById('u_noImageText').classList.add('hidden');
+          }
+          reader.readAsDataURL(input.files[0]);
+      }
   }
 
   function saveUser() {
@@ -1506,6 +1554,29 @@ function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
           }
       });
   }
+
+  function updateDeptDropdown(users) {
+      var depts = new Set();
+      users.forEach(u => { if(u.dept) depts.add(u.dept); });
+      var sorted = Array.from(depts).sort();
+
+      var selModal = document.getElementById('u_dept');
+      var currentVal = selModal.value; 
+      selModal.innerHTML = '<option value="" selected disabled>-- เลือกแผนก --</option>';
+      sorted.forEach(d => { 
+          var opt = document.createElement('option'); opt.text = d; opt.value = d; selModal.add(opt); 
+      });
+      if(currentVal) selModal.value = currentVal;
+
+      var selFilter = document.getElementById('filterDept');
+      var currentFilter = selFilter.value;
+      selFilter.innerHTML = '<option value="">ทุกแผนก</option>';
+      sorted.forEach(d => {
+          var opt = document.createElement('option'); opt.text = d; opt.value = d; selFilter.add(opt);
+      });
+      selFilter.value = currentFilter;
+  }
+  
 </script>
 
 </body>
