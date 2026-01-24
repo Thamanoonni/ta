@@ -546,7 +546,13 @@
 
   const APP_CONFIG = {
       COMPANY_NAME: 'วิสดอม ออโต้พาร์ท',
-      LOGO_URL: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+      
+      // 1. โลโก้เล็ก (Header หน้า Dashboard)
+      LOGO_HEADER: 'https://drive.google.com/thumbnail?id=1RbfQoTcWEU6Y4USFIV9XjmAjgpx87hvA&sz=w1000', 
+      
+      // 2. โลโก้ใหญ่ (หน้า Login เหนือคำว่า "ลงเวลาทำงาน")
+      // ใส่ URL ของรูปใหญ่ที่ท่านต้องการตรงนี้
+      LOGO_LOGIN: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' 
   };
 
 // ลงทะเบียน Service Worker (จำเป็นสำหรับ PWA บน Android)
@@ -633,15 +639,18 @@
   });
 
   function setupUIFromConfig() {
-      // Login Screen
-      document.getElementById('loginLogo').src = APP_CONFIG.LOGO_URL;
+      // --- แก้ไขจุดนี้ ---
+      
+      // 1. หน้า Login (ใช้รูปใหญ่ LOGO_LOGIN)
+      document.getElementById('loginLogo').src = APP_CONFIG.LOGO_LOGIN; 
       document.getElementById('loginLogo').style.display = 'inline-block';
       
-      document.getElementById('footerLogo').src = APP_CONFIG.LOGO_URL;
+      // 2. Footer (โลโก้เล็ก)
+      document.getElementById('footerLogo').src = APP_CONFIG.LOGO_HEADER;
       document.getElementById('footerLogo').style.display = 'block';
 
-      // Header Dashboard
-      document.getElementById('headerLogo').src = APP_CONFIG.LOGO_URL;
+      // 3. Header Dashboard (ใช้รูปเล็ก LOGO_HEADER)
+      document.getElementById('headerLogo').src = APP_CONFIG.LOGO_HEADER;
       document.getElementById('headerLogo').style.display = 'block';
 
       // Set Texts
