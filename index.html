@@ -1266,7 +1266,7 @@ function startFaceLoginWithBroadcast(msg, token, name, photo, allowedApps, sysCo
     if (video.dataset.intervalId) clearInterval(video.dataset.intervalId);
     document.getElementById('faceLoginModal').classList.add('hidden');
   }
-
+/*
 function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
     var data = { 
         action: 'registerDevice', 
@@ -1285,6 +1285,59 @@ function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
             });
         } else {
             loginSuccess(empId, name, photo, allowedApps, sysConfig);
+        }
+    });
+} */
+function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
+    // แสดง Loading ระหว่างตรวจสอบสถานะรหัสผ่าน
+    Swal.fire({ title: 'กำลังตรวจสอบข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    var data = { 
+        action: 'registerDevice', 
+        empId: empId, 
+        deviceToken: getDeviceToken(), 
+        os: getMobileOS() 
+    };
+
+    // เปลี่ยนมาใช้ callAPI แบบรอผลลัพธ์
+    callAPI(data, function(res) {
+        
+        // กรณีต้องตั้งรหัสผ่านใหม่ (Force Setup)
+        if (res.status === 'force_setup') {
+            Swal.close();
+            // เตรียมหน้าตั้งรหัสผ่าน
+            document.getElementById('setupEmpId').value = res.empId;
+            document.getElementById('setupShowName').innerText = res.name;
+            document.getElementById('setupShowId').innerText = res.empId;
+            
+            // ซ่อนหน้าอื่น เปิดหน้า Setup
+            hideAll();
+            document.getElementById('setupPassScreen').classList.remove('hidden');
+            
+            Swal.fire({ 
+                icon: 'info', 
+                title: 'ยินดีต้อนรับ', 
+                text: 'กรุณาตั้งรหัสผ่านสำหรับการเข้าใช้งานครั้งต่อไป' 
+            });
+        } 
+        // กรณีปกติ (Login สำเร็จ)
+        else {
+            Swal.fire({ 
+                icon: 'success', 
+                title: 'ยืนยันตัวตนสำเร็จ', 
+                text: 'ยินดีต้อนรับ ' + name, 
+                timer: 1500, 
+                showConfirmButton: false 
+            }).then(() => { 
+                if (pendingBroadcastData.msg && pendingBroadcastData.msg.toString().trim() !== "") {
+                    showBroadcast(pendingBroadcastData.msg, function() {
+                        loginSuccess(empId, name, photo, allowedApps, sysConfig);
+                        pendingBroadcastData = { msg: null, token: null, name: null, photo: null, allowedApps: null, sysConfig: null }; 
+                    });
+                } else {
+                    loginSuccess(empId, name, photo, allowedApps, sysConfig);
+                }
+            });
         }
     });
 }
@@ -1344,7 +1397,7 @@ function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
       var empId = document.getElementById('regEmpId').value; var fname = document.getElementById('regFname').value; var lname = document.getElementById('regLname').value; var dept = document.getElementById('regDept').value; var email = document.getElementById('regEmail').value; var pass = document.getElementById('regPass').value; var confirmPass = document.getElementById('regConfirmPass').value; 
       if (!empId || !fname || !lname || !dept || !email || !pass || !confirmPass) { Swal.fire('แจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบถ้วน', 'warning'); return; } 
       if (pass !== confirmPass) { Swal.fire('แจ้งเตือน', 'รหัสผ่านยืนยันไม่ตรงกัน', 'error'); return; } 
-      var data = { action: 'register', empId: empId, fname: fname, lname: lname, department: dept, email: email, password: pass }; tempEmail = data.email; 
+      var data = { action: 'register', empId: empId, fname: fname, lname: lname, department: dept, email: email, password: pass, os: getMobileOS() }; tempEmail = data.email; 
       callAPI(data, function(res) { if(res.status === 'success') { Swal.fire('สำเร็จ', res.message, 'success'); showOTP(); } else { Swal.fire('แจ้งเตือน', res.message, 'error'); } }); 
   }
   function doConfirmOTP() { callAPI({ action: 'confirmOTP', email: tempEmail, otp: document.getElementById('otpInput').value }, function(res) { if(res.status === 'success') { Swal.fire('สำเร็จ', 'ลงทะเบียนเรียบร้อย', 'success'); showLogin(); } else { Swal.fire('ผิดพลาด', res.message, 'error'); } }); }
