@@ -40,7 +40,10 @@
     navigator.serviceWorker.register('./sw.js')
       .then(() => console.log('Service Worker Registered'));
   }
-
+    
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').then(() => console.log('Service Worker Registered'));
+  }
   // 2. Logic สำหรับปุ่ม "ติดตั้งลงเครื่อง"
   let deferredPrompt;
   
@@ -80,6 +83,7 @@
 </script>    
 </body>
 </html>
+
 
 
 
