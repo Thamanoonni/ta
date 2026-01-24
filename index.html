@@ -899,6 +899,12 @@ function loadHistory() {
         var list = document.getElementById('historyList'); 
         list.innerHTML = ''; 
         lastScanTime = null; 
+        if (res.status !== 'success') {
+             list.innerHTML = '<li class="list-group-item text-center text-danger">โหลดข้อมูลไม่สำเร็จ: ' + (res.message || 'Unknown Error') + '</li>';
+             isHistoryLoaded = true;
+             checkScanAvailability();
+             return;
+        }
         
         if(res.data.length === 0) { 
             list.innerHTML = '<li class="list-group-item text-center text-muted">ไม่พบประวัติการสแกน</li>'; 
