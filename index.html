@@ -417,7 +417,7 @@
         </div>
     </div>
   </div>
-
+  <!--
   <div id="cameraModal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:9999; display:none; flex-direction:column; justify-content:center; align-items:center;">
     <video id="videoFeed" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
     <div style="position:absolute; bottom:30px; width:100%; text-align:center; z-index:10000;">
@@ -426,6 +426,21 @@
       <button onclick="closeCamera()" class="btn btn-outline-light btn-sm px-4 rounded-pill">ยกเลิก</button>
     </div>
   </div>
+  -->
+  <div id="cameraModal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:9999; display:none; flex-direction:column; justify-content:center; align-items:center;">
+    <video id="videoFeed" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+    
+    <canvas id="scanOverlay" style="position:absolute; top:0; left:0;"></canvas>
+
+    <div style="position:absolute; bottom:50px; width:100%; text-align:center; z-index:10000;">
+      <div id="scanStatusBox" class="bg-white px-4 py-2 rounded-pill shadow-sm d-inline-block">
+          <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+          <span class="fw-bold text-dark ms-2" id="scanStatusText">กำลังตรวจสอบใบหน้า...</span>
+      </div>
+      <br><br>
+      <button onclick="closeCamera()" class="btn btn-outline-light btn-sm px-4 rounded-pill">ยกเลิก</button>
+    </div>
+</div>
 
   <div class="modal fade" id="userFormModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
@@ -554,6 +569,9 @@
   // ==========================================
 
   var currentUser = null;
+  var referenceFaceDescriptor = null; // *** เพิ่มตัวแปรนี้ ***
+  var isScanning = false;
+
   var tempEmail = '';
   var lastScanTime = null; 
   var myDeviceToken = null; 
@@ -764,8 +782,26 @@
       if(!photoUrl) photoUrl = localStorage.getItem('saved_user_photo');
       if (photoUrl && photoUrl.trim() !== "") { imgEl.src = photoUrl; imgEl.style.display = 'block'; iconEl.style.display = 'none'; } else { imgEl.style.display = 'none'; iconEl.style.display = 'block'; }
 
+      // *** เพิ่ม: สร้างข้อมูลใบหน้าอ้างอิงเตรียมไว้สำหรับการสแกน ***
+      if (photoUrl) {
+          prepareReferenceFaceForScan(photoUrl);
+      }  
+
       renderPortalApps();
       showDashboard();
+  }
+
+  // *** เพิ่มฟังก์ชันใหม่: แปลงรูปโปรไฟล์เป็นข้อมูล AI ***
+  async function prepareReferenceFaceForScan(photoUrl) {
+      try {
+          if (!faceModelsLoaded) await loadFaceModels();
+          const img = await faceapi.fetchImage(photoUrl);
+          const detections = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+          if (detections) {
+              referenceFaceDescriptor = detections.descriptor;
+              console.log("Reference face loaded ready for scan.");
+          }
+      } catch (e) { console.error("Load reference face failed", e); }
   }
 
   function renderPortalApps() {
@@ -1340,9 +1376,142 @@ function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
   }
   function doConfirmOTP() { callAPI({ action: 'confirmOTP', email: tempEmail, otp: document.getElementById('otpInput').value }, function(res) { if(res.status === 'success') { Swal.fire('สำเร็จ', 'ลงทะเบียนเรียบร้อย', 'success'); showLogin(); } else { Swal.fire('ผิดพลาด', res.message, 'error'); } }); }
   
+  // --- Auto Face Scan Logic ---
+
   function openCamera() { 
       if (!isLocationValid) { return; } 
-      if (lastScanTime) { var now = new Date(); var last = new Date(); var parts = lastScanTime.split(':'); last.setHours(parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2]), 0); var diffHrs = (now - last) / (1000 * 60 * 60); if (diffHrs < 2 && diffHrs >= 0) { var waitMins = Math.ceil((2 - diffHrs) * 60); Swal.fire({ icon: 'warning', title: 'สแกนถี่เกินไป', html: 'ต้องเว้นระยะห่าง 2 ชั่วโมง<br>รออีก ' + waitMins + ' นาที' }); return; } } var modal = document.getElementById('cameraModal'); var video = document.getElementById('videoFeed'); modal.classList.remove('hidden'); modal.style.display = 'flex'; var constraints = { audio: false, video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } }; navigator.mediaDevices.getUserMedia(constraints).then(function(stream) { video.srcObject = stream; }).catch(function(err) { Swal.fire('Camera Error', err.message, 'error'); closeCamera(); }); }
+      
+      // เช็คการสแกนถี่ (Logic เดิม)
+      if (lastScanTime) { 
+          var now = new Date(); 
+          var last = new Date(); 
+          var parts = lastScanTime.split(':'); 
+          last.setHours(parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2]), 0); 
+          var diffHrs = (now - last) / (1000 * 60 * 60); 
+          if (diffHrs < 2 && diffHrs >= 0) { 
+              var waitMins = Math.ceil((2 - diffHrs) * 60); 
+              Swal.fire({ icon: 'warning', title: 'สแกนถี่เกินไป', html: 'ต้องเว้นระยะห่าง 2 ชั่วโมง<br>รออีก ' + waitMins + ' นาที' }); 
+              return; 
+          } 
+      } 
+
+      // เปิด Modal
+      var modal = document.getElementById('cameraModal'); 
+      var video = document.getElementById('videoFeed'); 
+      modal.classList.remove('hidden'); 
+      modal.style.display = 'flex'; 
+      
+      document.getElementById('scanStatusText').innerText = "กรุณามองกล้อง...";
+      document.getElementById('scanStatusBox').classList.remove('bg-success', 'text-white');
+      document.getElementById('scanStatusBox').classList.add('bg-white');
+
+      // เปิดกล้อง
+      navigator.mediaDevices.getUserMedia({ 
+          audio: false, 
+          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } 
+      }).then(function(stream) { 
+          video.srcObject = stream;
+          video.onplay = function() {
+              // เริ่ม Loop ตรวจจับหน้า
+              isScanning = true;
+              detectFaceLoop();
+          };
+      }).catch(function(err) { 
+          Swal.fire('Camera Error', err.message, 'error'); 
+          closeCamera(); 
+      }); 
+  }
+
+  async function detectFaceLoop() {
+      if (!isScanning) return;
+      const video = document.getElementById('videoFeed');
+      const canvas = document.getElementById('scanOverlay');
+      
+      // ตั้งค่าขนาด Canvas ให้ตรงกับวิดีโอ
+      const displaySize = { width: video.videoWidth, height: video.videoHeight };
+      faceapi.matchDimensions(canvas, displaySize);
+
+      // ตรวจจับหน้า
+      const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+                                     .withFaceLandmarks()
+                                     .withFaceDescriptor();
+
+      // ล้าง Canvas เดิม
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (detection) {
+          // วาดกรอบหน้า (เพื่อให้รู้ว่ากล้องจับเจอ)
+          const resizedDetections = faceapi.resizeResults(detection, displaySize);
+          const box = resizedDetections.detection.box;
+          
+          if (!referenceFaceDescriptor) {
+              // ถ้าไม่มีรูปต้นฉบับให้เทียบ (กรณี Login Pass แล้วไม่มีรูปในระบบ)
+              // อาจจะยอมให้ผ่านเลย หรือ แจ้งเตือน (ในที่นี้ให้ผ่านแบบ Manual Trigger หรือ Snap เลยก็ได้)
+              // แต่เพื่อความปลอดภัย ควรแจ้งเตือน
+              drawBox(ctx, box, 'yellow');
+              document.getElementById('scanStatusText').innerText = "ไม่พบข้อมูลหน้าอ้างอิง (ถ่ายอัตโนมัติ)";
+              autoSnap(video); 
+              return;
+          }
+
+          // เทียบหน้า
+          const faceMatcher = new faceapi.FaceMatcher(referenceFaceDescriptor, 0.55);
+          const match = faceMatcher.findBestMatch(detection.descriptor);
+
+          if (match.label !== 'unknown' && match.distance < 0.5) {
+              // *** หน้าตรงกัน! ***
+              drawBox(ctx, box, '#28a745'); // กรอบสีเขียว
+              document.getElementById('scanStatusText').innerText = "ยืนยันตัวตนสำเร็จ!";
+              document.getElementById('scanStatusBox').classList.remove('bg-white');
+              document.getElementById('scanStatusBox').classList.add('bg-success', 'text-white');
+              
+              isScanning = false; // หยุดสแกน
+              autoSnap(video);    // ถ่ายรูป
+          } else {
+              // หน้าไม่ตรง
+              drawBox(ctx, box, '#dc3545'); // กรอบสีแดง
+              document.getElementById('scanStatusText').innerText = "ใบหน้าไม่ถูกต้อง";
+              setTimeout(detectFaceLoop, 200); // ลองใหม่
+          }
+      } else {
+          // ไม่เจอหน้า
+          document.getElementById('scanStatusText').innerText = "กรุณามองกล้อง...";
+          setTimeout(detectFaceLoop, 200); // ลองใหม่
+      }
+  }
+
+  function drawBox(ctx, box, color) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 4;
+      ctx.strokeRect(box.x, box.y, box.width, box.height);
+  }
+
+  function autoSnap(video) {
+      // สร้างภาพจากวิดีโอ
+      var canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      var imageBase64 = canvas.toDataURL('image/jpeg', 0.8);
+      
+      // ปิดกล้องทันทีเพื่อความรวดเร็ว
+      closeCamera();
+      
+      // ส่งข้อมูล
+      sendScanData(imageBase64);
+  }
+
+  function closeCamera() { 
+      isScanning = false;
+      var video = document.getElementById('videoFeed'); 
+      if (video.srcObject) { 
+          video.srcObject.getTracks().forEach(t => t.stop()); 
+          video.srcObject = null; 
+      } 
+      document.getElementById('cameraModal').style.display = 'none'; 
+  }
   function snapPhoto() { var video = document.getElementById('videoFeed'); if (!video.srcObject) return; Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } }); var canvas = document.createElement('canvas'); var ctx = canvas.getContext('2d'); var maxWidth = 800; var scale = maxWidth / video.videoWidth; canvas.width = maxWidth; canvas.height = video.videoHeight * scale; ctx.drawImage(video, 0, 0, canvas.width, canvas.height); var imageBase64 = canvas.toDataURL('image/jpeg', 0.8); closeCamera(); sendScanData(imageBase64); }
   function closeCamera() { var video = document.getElementById('videoFeed'); if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; } document.getElementById('cameraModal').style.display = 'none'; }
   function sendScanData(imageBase64) { if (navigator.geolocation) { navigator.geolocation.getCurrentPosition(function(position) { var data = { action: 'scan', empId: currentUser, clientDate: getLocalDateString(), lat: position.coords.latitude, lng: position.coords.longitude, imageBase64: imageBase64 }; callAPI(data, function(res) { Swal.close(); if(res.status === 'success') { Swal.fire('บันทึกสำเร็จ', 'เวลา: ' + res.time, 'success'); loadHistory(); } else { Swal.fire('Error', res.message, 'error'); } }); }, function(error) { Swal.fire('Location Error', 'กรุณาเปิด GPS', 'error'); }); } else { Swal.fire('Error', 'Browser ไม่รองรับ GPS', 'error'); } }
