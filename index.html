@@ -1464,6 +1464,7 @@ async function detectFaceLoop() {
       const displaySize = { width: video.videoWidth, height: video.videoHeight };
       faceapi.matchDimensions(canvas, displaySize);
 
+      // ตรวจจับหน้า + จุดบนใบหน้า (Landmarks)
       const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
                                      .withFaceLandmarks()
                                      .withFaceDescriptor();
@@ -1484,7 +1485,7 @@ async function detectFaceLoop() {
                return;
           }
 
-          // 2. เทียบหน้า (Face Match)
+          // 2. เทียบหน้า
           const faceMatcher = new faceapi.FaceMatcher(referenceFaceDescriptor, 0.55);
           const match = faceMatcher.findBestMatch(detection.descriptor);
 
@@ -1492,10 +1493,10 @@ async function detectFaceLoop() {
               isFaceMatched = true;
           } else {
               isFaceMatched = false;
-              eyesOpenDetected = false; // ถ้าหน้าหลุด ให้เริ่มเช็คตาใหม่
+              eyesOpenDetected = false; 
           }
 
-          // 3. Logic ตรวจจับ
+          // 3. Logic ตรวจจับการกระพริบตา
           if (isFaceMatched) {
               
               const leftEye = landmarks.getLeftEye();
@@ -1503,33 +1504,32 @@ async function detectFaceLoop() {
               const leftEAR = getEyeRatio(leftEye);
               const rightEAR = getEyeRatio(rightEye);
               
-              // ค่าเฉลี่ยการลืมตา
+              // ค่าเฉลี่ยการลืมตา (Eye Aspect Ratio)
               const avgEAR = (leftEAR + rightEAR) / 2;
 
-              // --- Step A: ต้องตรวจเจอการลืมตาปกติก่อน (> 0.30) ---
-              if (avgEAR > 0.30) {
+              // --- ปรับจูนค่า Threshold ใหม่ (เหมาะกับคนเอเชีย) ---
+              // ขั้นที่ 1: ตรวจจับว่า "ลืมตาปกติ" (ลดเกณฑ์ลงจาก 0.30 เหลือ 0.22 เพื่อให้จับง่ายขึ้น)
+              if (avgEAR > 0.22) {
                   eyesOpenDetected = true;
               }
 
-              // --- Step B: เมื่อเคยลืมตาแล้ว ค่อยดักจับการกระพริบตา (< 0.25) ---
-              if (eyesOpenDetected && avgEAR < 0.25) {
+              // ขั้นที่ 2: เมื่อเคยลืมตาแล้ว รอจังหวะ "หลับตา/กระพริบ" (ค่าต้องต่ำกว่า 0.18)
+              if (eyesOpenDetected && avgEAR < 0.18) {
                   // *** กระพริบตาสำเร็จ! ***
                   drawBox(ctx, box, '#198754', "Success");
                   document.getElementById('scanStatusText').innerText = "ยืนยันตัวตนสำเร็จ!";
                   document.getElementById('scanStatusBox').classList.remove('bg-white', 'bg-primary');
                   document.getElementById('scanStatusBox').classList.add('bg-success', 'text-white');
 
-                  isScanning = false;
+                  isScanning = false; // หยุดสแกน
                   setTimeout(() => { autoSnap(video); }, 300);
                   return;
 
               } else {
-                  // *** แสดงสถานะรอ ***
-                  // วาดกรอบน้ำเงิน
-                  drawBox(ctx, box, '#0d6efd'); 
+                  // *** หน้าถูกแล้ว รอการกระพริบตา ***
+                  drawBox(ctx, box, '#0d6efd'); // กรอบน้ำเงิน
                   
-                  // ข้อความแจ้งเตือน
-                  document.getElementById('scanStatusText').innerText = "กรุณากระพริบตา (Blink Eyes)";
+                  document.getElementById('scanStatusText').innerText = "กรุณากระพริบตา (Blink)";
                   document.getElementById('scanStatusBox').classList.remove('bg-white', 'bg-success');
                   document.getElementById('scanStatusBox').classList.add('bg-primary', 'text-white');
               }
