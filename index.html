@@ -1263,6 +1263,11 @@ function startFaceLoginWithBroadcast(msg, token, name, photo, allowedApps, sysCo
                 }
             }, 500);
             video.dataset.intervalId = interval;
+            // *** เพิ่มส่วนนี้ ***
+            isFaceMatched = false;
+            eyesOpenDetected = false; // Reset ค่าลืมตาใหม่ทุกครั้งที่เปิดกล้อง
+            isScanning = true;
+            detectFaceLoop();
         };
     } catch (err) { Swal.fire('Camera Error', err.message, 'error'); closeFaceLogin(); }
   }
@@ -1434,67 +1439,112 @@ function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
           closeCamera(); 
       }); 
   }
+ 
+
+  // เพิ่มตัวแปรเช็คสถานะการ Match หน้า
+  // ตัวแปรจำสถานะว่าหน้าตรงกันแล้ว
+  var isFaceMatched = false;
+  var eyesOpenDetected = false; // *** เพิ่มตัวแปรนี้: เพื่อเช็คว่าลืมตาแล้วหรือยัง ***
 
   async function detectFaceLoop() {
       if (!isScanning) return;
+      
       const video = document.getElementById('videoFeed');
       const canvas = document.getElementById('scanOverlay');
       
-      // ตั้งค่าขนาด Canvas ให้ตรงกับวิดีโอ
       const displaySize = { width: video.videoWidth, height: video.videoHeight };
       faceapi.matchDimensions(canvas, displaySize);
 
-      // ตรวจจับหน้า
       const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
                                      .withFaceLandmarks()
                                      .withFaceDescriptor();
 
-      // ล้าง Canvas เดิม
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (detection) {
-          // วาดกรอบหน้า (เพื่อให้รู้ว่ากล้องจับเจอ)
           const resizedDetections = faceapi.resizeResults(detection, displaySize);
           const box = resizedDetections.detection.box;
-          
+          const landmarks = resizedDetections.landmarks;
+
+          // 1. เช็คต้นฉบับ
           if (!referenceFaceDescriptor) {
-              // ถ้าไม่มีรูปต้นฉบับให้เทียบ (กรณี Login Pass แล้วไม่มีรูปในระบบ)
-              // อาจจะยอมให้ผ่านเลย หรือ แจ้งเตือน (ในที่นี้ให้ผ่านแบบ Manual Trigger หรือ Snap เลยก็ได้)
-              // แต่เพื่อความปลอดภัย ควรแจ้งเตือน
-              drawBox(ctx, box, 'yellow');
-              document.getElementById('scanStatusText').innerText = "ไม่พบข้อมูลหน้าอ้างอิง (ถ่ายอัตโนมัติ)";
-              autoSnap(video); 
-              return;
+               drawBox(ctx, box, '#ffc107', "Auto Snap"); 
+               document.getElementById('scanStatusText').innerText = "ไม่พบต้นฉบับ (ถ่ายอัตโนมัติ)";
+               autoSnap(video);
+               return;
           }
 
-          // เทียบหน้า
+          // 2. เทียบหน้า (Face Match)
           const faceMatcher = new faceapi.FaceMatcher(referenceFaceDescriptor, 0.55);
           const match = faceMatcher.findBestMatch(detection.descriptor);
 
           if (match.label !== 'unknown' && match.distance < 0.5) {
-              // *** หน้าตรงกัน! ***
-              drawBox(ctx, box, '#28a745'); // กรอบสีเขียว
-              document.getElementById('scanStatusText').innerText = "ยืนยันตัวตนสำเร็จ!";
-              document.getElementById('scanStatusBox').classList.remove('bg-white');
-              document.getElementById('scanStatusBox').classList.add('bg-success', 'text-white');
-              
-              isScanning = false; // หยุดสแกน
-              autoSnap(video);    // ถ่ายรูป
+              isFaceMatched = true;
           } else {
-              // หน้าไม่ตรง
-              drawBox(ctx, box, '#dc3545'); // กรอบสีแดง
-              document.getElementById('scanStatusText').innerText = "ใบหน้าไม่ถูกต้อง";
-              setTimeout(detectFaceLoop, 200); // ลองใหม่
+              isFaceMatched = false;
+              eyesOpenDetected = false; // ถ้าหน้าหลุด ให้เริ่มเช็คตาใหม่
           }
+
+          // 3. Logic ตรวจจับ
+          if (isFaceMatched) {
+              
+              const leftEye = landmarks.getLeftEye();
+              const rightEye = landmarks.getRightEye();
+              const leftEAR = getEyeRatio(leftEye);
+              const rightEAR = getEyeRatio(rightEye);
+              
+              // ค่าเฉลี่ยการลืมตา
+              const avgEAR = (leftEAR + rightEAR) / 2;
+
+              // --- Step A: ต้องตรวจเจอการลืมตาปกติก่อน (> 0.30) ---
+              if (avgEAR > 0.30) {
+                  eyesOpenDetected = true;
+              }
+
+              // --- Step B: เมื่อเคยลืมตาแล้ว ค่อยดักจับการกระพริบตา (< 0.25) ---
+              if (eyesOpenDetected && avgEAR < 0.25) {
+                  // *** กระพริบตาสำเร็จ! ***
+                  drawBox(ctx, box, '#198754', "Success");
+                  document.getElementById('scanStatusText').innerText = "ยืนยันตัวตนสำเร็จ!";
+                  document.getElementById('scanStatusBox').classList.remove('bg-white', 'bg-primary');
+                  document.getElementById('scanStatusBox').classList.add('bg-success', 'text-white');
+
+                  isScanning = false;
+                  setTimeout(() => { autoSnap(video); }, 300);
+                  return;
+
+              } else {
+                  // *** แสดงสถานะรอ ***
+                  // วาดกรอบน้ำเงิน
+                  drawBox(ctx, box, '#0d6efd'); 
+                  
+                  // ข้อความแจ้งเตือน
+                  document.getElementById('scanStatusText').innerText = "กรุณากระพริบตา (Blink Eyes)";
+                  document.getElementById('scanStatusBox').classList.remove('bg-white', 'bg-success');
+                  document.getElementById('scanStatusBox').classList.add('bg-primary', 'text-white');
+              }
+
+          } else {
+              // *** หน้าไม่ตรง ***
+              drawBox(ctx, box, '#dc3545'); // แดง
+              document.getElementById('scanStatusText').innerText = "ใบหน้าไม่ถูกต้อง";
+              document.getElementById('scanStatusBox').classList.remove('bg-success', 'bg-primary', 'text-white');
+              document.getElementById('scanStatusBox').classList.add('bg-white');
+          }
+          
+          setTimeout(detectFaceLoop, 100);
+
       } else {
           // ไม่เจอหน้า
           document.getElementById('scanStatusText').innerText = "กรุณามองกล้อง...";
-          setTimeout(detectFaceLoop, 200); // ลองใหม่
+          document.getElementById('scanStatusBox').classList.remove('bg-success', 'bg-primary', 'text-white');
+          document.getElementById('scanStatusBox').classList.add('bg-white');
+          setTimeout(detectFaceLoop, 100);
       }
   }
-
-  function drawBox(ctx, box, color) {
+  // ฟังก์ชันวาดกรอบ
+  function drawBox(ctx, box, color, text) {
       ctx.strokeStyle = color;
       ctx.lineWidth = 4;
       ctx.strokeRect(box.x, box.y, box.width, box.height);
@@ -2025,6 +2075,27 @@ function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
           var opt = document.createElement('option'); opt.text = d; opt.value = d; selFilter.add(opt);
       });
       selFilter.value = currentFilter;
+  }
+
+  // --- BLINK DETECTION HELPERS (Liveness Check) ---
+  // คำนวณอัตราส่วนดวงตา (Eye Aspect Ratio - EAR)
+  function getEyeRatio(eyePoints) {
+      // eyePoints 0-5 คือจุดรอบดวงตา
+      // ระยะห่างแนวตั้ง (เปลือกตาบน-ล่าง)
+      const v1 = dist(eyePoints[1], eyePoints[5]);
+      const v2 = dist(eyePoints[2], eyePoints[4]);
+      
+      // ระยะห่างแนวนอน (หัวตา-หางตา)
+      const h = dist(eyePoints[0], eyePoints[3]);
+      
+      // สูตร EAR
+      const ratio = (v1 + v2) / (2.0 * h);
+      return ratio;
+  }
+
+  // คำนวณระยะห่างระหว่างจุด 2 จุด
+  function dist(p1, p2) {
+      return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
   }
   
 </script>
