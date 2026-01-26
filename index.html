@@ -955,29 +955,33 @@ function loadHistory() {
       var dateVal = document.getElementById('historyDate').value;
       var today = getLocalDateString();
 
+      // กรณีดูย้อนหลัง
       if (dateVal !== today) {
           btn.disabled = true;
           btn.classList.remove('hidden'); 
           btn.classList.add('btn-secondary');
-          btn.classList.remove('btn-warning');
+          btn.classList.remove('btn-primary', 'btn-warning'); // ลบสีเดิมออก
           btn.innerHTML = '🚫 ดูย้อนหลัง (งดสแกน)';
           return;
       }
 
+      // กรณี GPS ไม่ผ่าน
       if (!isLocationValid) {
           btn.classList.add('hidden');
           return;
       }
 
+      // กรณีประวัติยังโหลดไม่เสร็จ
       if (!isHistoryLoaded) {
           btn.classList.remove('hidden'); 
           btn.disabled = true;            
           btn.classList.add('btn-secondary');
-          btn.classList.remove('btn-warning');
+          btn.classList.remove('btn-primary', 'btn-warning');
           btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังตรวจสอบประวัติ...'; 
           return;
       }
 
+      // กรณีสแกนถี่เกินไป (ติด Cooldown)
       if (lastScanTime) {
           var now = new Date();
           var last = new Date();
@@ -992,18 +996,20 @@ function loadHistory() {
               btn.classList.remove('hidden');
               btn.disabled = true; 
               btn.classList.add('btn-secondary');
-              btn.classList.remove('btn-warning');
+              btn.classList.remove('btn-primary', 'btn-warning');
               btn.innerHTML = `⏳ รอสแกนได้อีกครั้ง ${timeStr}`;
               return;
           }
       }
 
-      // *** จุดที่แก้ไข ***
+      // *** จุดที่แก้ไข (พร้อมสแกน) ***
       btn.classList.remove('hidden');
       btn.disabled = false; 
-      btn.classList.remove('btn-secondary');
-      btn.classList.add('btn-warning');
-      btn.innerHTML = '📸 สแกนใบหน้าลงเวลา (Face Scan)'; 
+      btn.classList.remove('btn-secondary', 'btn-warning'); // ลบสีส้มออก
+      btn.classList.add('btn-primary'); // ใส่สีน้ำเงิน (พื้นหลังเข้ม ตัวหนังสือขาวชัดเจน)
+      
+      // เปลี่ยนไอคอนเป็นรูปหน้าคน
+      btn.innerHTML = '<i class="bi bi-person-bounding-box" style="font-size: 1.2rem;"></i> สแกนใบหน้า (Face Scan)'; 
   }
 
   function setCookie(name, value, days) { var expires = ""; if (days) { var date = new Date(); date.setTime(date.getTime() + (days*24*60*60*1000)); expires = "; expires=" + date.toUTCString(); } document.cookie = name + "=" + (value || "")  + expires + "; path=/"; }
@@ -1372,7 +1378,9 @@ function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
 
   function openCamera() { 
       if (!isLocationValid) { return; } 
-      
+      // *** แก้ไข: ซ่อนปุ่มสแกนทันทีที่กด เพื่อป้องกันกดซ้ำ ***
+      document.getElementById('btnScan').classList.add('hidden');
+
       // เช็คการสแกนถี่ (Logic เดิม)
       if (lastScanTime) { 
           var now = new Date(); 
@@ -1503,6 +1511,8 @@ function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
           video.srcObject = null; 
       } 
       document.getElementById('cameraModal').style.display = 'none'; 
+      // *** แก้ไข: เรียกฟังก์ชันนี้เพื่อแสดงปุ่มสแกนกลับมา ***
+      checkScanAvailability();
   }
   function snapPhoto() { var video = document.getElementById('videoFeed'); if (!video.srcObject) return; Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } }); var canvas = document.createElement('canvas'); var ctx = canvas.getContext('2d'); var maxWidth = 800; var scale = maxWidth / video.videoWidth; canvas.width = maxWidth; canvas.height = video.videoHeight * scale; ctx.drawImage(video, 0, 0, canvas.width, canvas.height); var imageBase64 = canvas.toDataURL('image/jpeg', 0.8); closeCamera(); sendScanData(imageBase64); }
   function closeCamera() { var video = document.getElementById('videoFeed'); if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; } document.getElementById('cameraModal').style.display = 'none'; }
