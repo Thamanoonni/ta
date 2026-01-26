@@ -419,9 +419,18 @@
   </div>
 
   <div id="cameraModal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:9999; display:none; flex-direction:column; justify-content:center; align-items:center;">
-    <video id="videoFeed" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
     
-    <canvas id="scanOverlay" style="position:absolute; top:0; left:0;"></canvas>
+    <div style="position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
+        
+        <video id="videoFeed" autoplay playsinline 
+               style="width: 100%; height: 100%; object-fit: contain; transform: scaleX(-1);">
+        </video>
+        
+        <canvas id="scanOverlay" 
+                style="position:absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; transform: scaleX(-1);">
+        </canvas>
+
+    </div>
 
     <div style="position:absolute; bottom:50px; width:100%; text-align:center; z-index:10000;">
       <div id="scanStatusBox" class="bg-white px-4 py-2 rounded-pill shadow-sm d-inline-block">
@@ -431,7 +440,7 @@
       <br><br>
       <button onclick="closeCamera()" class="btn btn-outline-light btn-sm px-4 rounded-pill">ยกเลิก</button>
     </div>
-</div>
+  </div>
 
   <div class="modal fade" id="userFormModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
