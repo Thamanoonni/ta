@@ -1446,7 +1446,7 @@ function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
   var isFaceMatched = false;
   var eyesOpenDetected = false; // *** เพิ่มตัวแปรนี้: เพื่อเช็คว่าลืมตาแล้วหรือยัง ***
 
-  async function detectFaceLoop() {
+async function detectFaceLoop() {
       if (!isScanning) return;
       
       const video = document.getElementById('videoFeed');
@@ -1543,6 +1543,7 @@ function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
           setTimeout(detectFaceLoop, 100);
       }
   }
+
   // ฟังก์ชันวาดกรอบ
   function drawBox(ctx, box, color, text) {
       ctx.strokeStyle = color;
