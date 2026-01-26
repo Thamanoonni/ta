@@ -417,16 +417,7 @@
         </div>
     </div>
   </div>
-  <!--
-  <div id="cameraModal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:9999; display:none; flex-direction:column; justify-content:center; align-items:center;">
-    <video id="videoFeed" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
-    <div style="position:absolute; bottom:30px; width:100%; text-align:center; z-index:10000;">
-      <button onclick="snapPhoto()" class="btn btn-warning rounded-circle shadow" style="width:80px; height:80px; border:4px solid white; padding:0; font-size:30px;">📸</button>
-      <br><br>
-      <button onclick="closeCamera()" class="btn btn-outline-light btn-sm px-4 rounded-pill">ยกเลิก</button>
-    </div>
-  </div>
-  -->
+
   <div id="cameraModal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:9999; display:none; flex-direction:column; justify-content:center; align-items:center;">
     <video id="videoFeed" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
     
@@ -1007,11 +998,12 @@ function loadHistory() {
           }
       }
 
+      // *** จุดที่แก้ไข ***
       btn.classList.remove('hidden');
       btn.disabled = false; 
       btn.classList.remove('btn-secondary');
       btn.classList.add('btn-warning');
-      btn.innerHTML = '📸 ถ่ายรูปและลงเวลา (Scan)';
+      btn.innerHTML = '📸 สแกนใบหน้าลงเวลา (Face Scan)'; 
   }
 
   function setCookie(name, value, days) { var expires = ""; if (days) { var date = new Date(); date.setTime(date.getTime() + (days*24*60*60*1000)); expires = "; expires=" + date.toUTCString(); } document.cookie = name + "=" + (value || "")  + expires + "; path=/"; }
