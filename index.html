@@ -952,6 +952,8 @@ function loadHistory() {
 
   function checkScanAvailability() {
       var btn = document.getElementById('btnScan');
+      var locSection = document.getElementById('liveLocationSection'); // <--- 1. อ้างอิงส่วน Location
+      
       var dateVal = document.getElementById('historyDate').value;
       var today = getLocalDateString();
 
@@ -960,14 +962,10 @@ function loadHistory() {
           btn.disabled = true;
           btn.classList.remove('hidden'); 
           btn.classList.add('btn-secondary');
-          btn.classList.remove('btn-primary', 'btn-warning'); // ลบสีเดิมออก
+          btn.classList.remove('btn-primary', 'btn-warning');
           btn.innerHTML = '🚫 ดูย้อนหลัง (งดสแกน)';
-          return;
-      }
-
-      // กรณี GPS ไม่ผ่าน
-      if (!isLocationValid) {
-          btn.classList.add('hidden');
+          
+          locSection.classList.add('hidden'); // ซ่อนแผนที่
           return;
       }
 
@@ -988,6 +986,7 @@ function loadHistory() {
           var parts = lastScanTime.split(':');
           last.setHours(parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2]), 0);
 
+          // ตั้งเวลาหน่วง (ตัวอย่าง: 2 ชั่วโมง)
           var nextScanTime = new Date(last.getTime() + (2 * 60 * 60 * 1000));
 
           if (now < nextScanTime) {
@@ -998,20 +997,34 @@ function loadHistory() {
               btn.classList.add('btn-secondary');
               btn.classList.remove('btn-primary', 'btn-warning');
               btn.innerHTML = `⏳ รอสแกนได้อีกครั้ง ${timeStr}`;
+              
+              // *** 2. ซ่อนแผนที่เมื่อต้องรอเวลา ***
+              locSection.classList.add('hidden'); 
               return;
           }
       }
 
-      // *** จุดที่แก้ไข (พร้อมสแกน) ***
+      // --- กรณีพร้อมสแกน ---
+      
+      // *** 3. แสดงแผนที่กลับมาเมื่อพร้อมใช้งาน ***
+      locSection.classList.remove('hidden'); 
+
+      // ตรวจสอบ GPS (ต้องทำหลังจากสั่งแสดงแผนที่แล้ว ไม่งั้น Map จะคำนวณผิด)
+      if (!isLocationValid) {
+          btn.classList.add('hidden'); // ซ่อนปุ่มถ้าอยู่นอกพื้นที่
+          return;
+      }
+
+      // ปุ่มพร้อมใช้งาน
       btn.classList.remove('hidden');
       btn.disabled = false; 
-      btn.classList.remove('btn-secondary', 'btn-warning'); // ลบสีส้มออก
-      btn.classList.add('btn-primary'); // ใส่สีน้ำเงิน (พื้นหลังเข้ม ตัวหนังสือขาวชัดเจน)
+      btn.classList.remove('btn-secondary', 'btn-warning');
+      btn.classList.add('btn-primary');
       
-      // เปลี่ยนไอคอนเป็นรูปหน้าคน
+      // เปลี่ยนไอคอนและข้อความปุ่ม
       btn.innerHTML = '<i class="bi bi-person-bounding-box" style="font-size: 1.2rem;"></i> สแกนใบหน้า (Face Scan)'; 
   }
-
+  
   function setCookie(name, value, days) { var expires = ""; if (days) { var date = new Date(); date.setTime(date.getTime() + (days*24*60*60*1000)); expires = "; expires=" + date.toUTCString(); } document.cookie = name + "=" + (value || "")  + expires + "; path=/"; }
   function getCookie(name) { var nameEQ = name + "="; var ca = document.cookie.split(';'); for(var i=0;i < ca.length;i++) { var c = ca[i]; while (c.charAt(0)==' ') c = c.substring(1,c.length); if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length); } return null; }
 
@@ -1512,7 +1525,7 @@ function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
       } 
       document.getElementById('cameraModal').style.display = 'none'; 
       // *** แก้ไข: เรียกฟังก์ชันนี้เพื่อแสดงปุ่มสแกนกลับมา ***
-      checkScanAvailability();
+      checkScanAvailability();  
   }
   function snapPhoto() { var video = document.getElementById('videoFeed'); if (!video.srcObject) return; Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } }); var canvas = document.createElement('canvas'); var ctx = canvas.getContext('2d'); var maxWidth = 800; var scale = maxWidth / video.videoWidth; canvas.width = maxWidth; canvas.height = video.videoHeight * scale; ctx.drawImage(video, 0, 0, canvas.width, canvas.height); var imageBase64 = canvas.toDataURL('image/jpeg', 0.8); closeCamera(); sendScanData(imageBase64); }
   function closeCamera() { var video = document.getElementById('videoFeed'); if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; } document.getElementById('cameraModal').style.display = 'none'; }
