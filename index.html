@@ -571,6 +571,9 @@
   var currentUser = null;
   var referenceFaceDescriptor = null; // *** เพิ่มตัวแปรนี้ ***
   var isScanning = false;
+  
+  var matchCounter = 0; // ตัวนับความถูกต้องต่อเนื่อง
+  const REQUIRED_MATCHES = 10; // จำนวนครั้งที่ต้องตรงกัน (ประมาณ 1-1.5 วินาที)
 
   var tempEmail = '';
   var lastScanTime = null; 
@@ -1276,6 +1279,8 @@ function startFaceLoginWithBroadcast(msg, token, name, photo, allowedApps, sysCo
             isFaceMatched = false;
             eyesOpenDetected = false; // Reset ค่าลืมตาใหม่ทุกครั้งที่เปิดกล้อง
             isScanning = true;
+            matchCounter = 0; // รีเซ็ตตัวนับ
+            isScanning = true;
             detectFaceLoop();
         };
     } catch (err) { Swal.fire('Camera Error', err.message, 'error'); closeFaceLogin(); }
@@ -1464,7 +1469,7 @@ async function detectFaceLoop() {
       const displaySize = { width: video.videoWidth, height: video.videoHeight };
       faceapi.matchDimensions(canvas, displaySize);
 
-      // ตรวจจับหน้า + จุดบนใบหน้า (Landmarks)
+      // ใช้ tinyFaceDetector อย่างเดียวพอ (เร็วและไม่ต้องจับตา)
       const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
                                      .withFaceLandmarks()
                                      .withFaceDescriptor();
@@ -1475,7 +1480,6 @@ async function detectFaceLoop() {
       if (detection) {
           const resizedDetections = faceapi.resizeResults(detection, displaySize);
           const box = resizedDetections.detection.box;
-          const landmarks = resizedDetections.landmarks;
 
           // 1. เช็คต้นฉบับ
           if (!referenceFaceDescriptor) {
@@ -1490,62 +1494,56 @@ async function detectFaceLoop() {
           const match = faceMatcher.findBestMatch(detection.descriptor);
 
           if (match.label !== 'unknown' && match.distance < 0.5) {
-              isFaceMatched = true;
+              // *** หน้าตรงกับเจ้าของ ***
+              matchCounter++; // เพิ่มค่าความมั่นใจ
           } else {
-              isFaceMatched = false;
-              eyesOpenDetected = false; 
+              // *** หน้าไม่ตรง หรือ หน้าหลุด ***
+              matchCounter = 0; // รีเซ็ตค่าใหม่เริ่มนับ 0
           }
 
-          // 3. Logic ตรวจจับการกระพริบตา
-          if (isFaceMatched) {
+          // 3. แสดงผลตามค่าความมั่นใจ (Progress)
+          if (matchCounter > 0) {
               
-              const leftEye = landmarks.getLeftEye();
-              const rightEye = landmarks.getRightEye();
-              const leftEAR = getEyeRatio(leftEye);
-              const rightEAR = getEyeRatio(rightEye);
+              // คำนวณ % ความสำเร็จ
+              let progress = Math.min((matchCounter / REQUIRED_MATCHES) * 100, 100);
               
-              // ค่าเฉลี่ยการลืมตา (Eye Aspect Ratio)
-              const avgEAR = (leftEAR + rightEAR) / 2;
-
-              // --- ปรับจูนค่า Threshold ใหม่ (เหมาะกับคนเอเชีย) ---
-              // ขั้นที่ 1: ตรวจจับว่า "ลืมตาปกติ" (ลดเกณฑ์ลงจาก 0.30 เหลือ 0.22 เพื่อให้จับง่ายขึ้น)
-              if (avgEAR > 0.22) {
-                  eyesOpenDetected = true;
-              }
-
-              // ขั้นที่ 2: เมื่อเคยลืมตาแล้ว รอจังหวะ "หลับตา/กระพริบ" (ค่าต้องต่ำกว่า 0.18)
-              if (eyesOpenDetected && avgEAR < 0.18) {
-                  // *** กระพริบตาสำเร็จ! ***
-                  drawBox(ctx, box, '#198754', "Success");
+              if (matchCounter >= REQUIRED_MATCHES) {
+                  // *** ครบ 100% บันทึกทันที ***
+                  drawBox(ctx, box, '#198754', "Success 100%");
                   document.getElementById('scanStatusText').innerText = "ยืนยันตัวตนสำเร็จ!";
                   document.getElementById('scanStatusBox').classList.remove('bg-white', 'bg-primary');
                   document.getElementById('scanStatusBox').classList.add('bg-success', 'text-white');
 
-                  isScanning = false; // หยุดสแกน
-                  setTimeout(() => { autoSnap(video); }, 300);
+                  isScanning = false;
+                  // ถ่ายรูปเลย
+                  autoSnap(video);
                   return;
 
               } else {
-                  // *** หน้าถูกแล้ว รอการกระพริบตา ***
-                  drawBox(ctx, box, '#0d6efd'); // กรอบน้ำเงิน
+                  // *** กำลังโหลด (Progressing) ***
+                  // วาดกรอบสีน้ำเงิน
+                  drawBox(ctx, box, '#0d6efd', `Verifying ${Math.floor(progress)}%`);
                   
-                  document.getElementById('scanStatusText').innerText = "กรุณากระพริบตา (Blink)";
+                  document.getElementById('scanStatusText').innerText = `กำลังตรวจสอบ... ถือนิ่งๆ ${Math.floor(progress)}%`;
                   document.getElementById('scanStatusBox').classList.remove('bg-white', 'bg-success');
                   document.getElementById('scanStatusBox').classList.add('bg-primary', 'text-white');
               }
 
           } else {
-              // *** หน้าไม่ตรง ***
-              drawBox(ctx, box, '#dc3545'); // แดง
+              // *** หน้าไม่ถูกต้อง ***
+              drawBox(ctx, box, '#dc3545', 'Wrong Face'); // แดง
               document.getElementById('scanStatusText').innerText = "ใบหน้าไม่ถูกต้อง";
               document.getElementById('scanStatusBox').classList.remove('bg-success', 'bg-primary', 'text-white');
               document.getElementById('scanStatusBox').classList.add('bg-white');
           }
           
+          // วนลูป (ความเร็วประมาณ 100ms)
+          // ดังนั้น 10 ครั้ง = ประมาณ 1 วินาที
           setTimeout(detectFaceLoop, 100);
 
       } else {
-          // ไม่เจอหน้า
+          // ไม่เจอหน้า รีเซ็ต
+          matchCounter = 0;
           document.getElementById('scanStatusText').innerText = "กรุณามองกล้อง...";
           document.getElementById('scanStatusBox').classList.remove('bg-success', 'bg-primary', 'text-white');
           document.getElementById('scanStatusBox').classList.add('bg-white');
@@ -1553,6 +1551,26 @@ async function detectFaceLoop() {
       }
   }
 
+  // แก้ไขฟังก์ชันวาดกรอบนิดหน่อยให้รองรับข้อความ Progress
+  function drawBox(ctx, box, color, text) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 4;
+      
+      // วาดสี่เหลี่ยม
+      ctx.beginPath();
+      ctx.rect(box.x, box.y, box.width, box.height);
+      ctx.stroke();
+
+      // วาดแถบข้อความด้านบน
+      if (text) {
+          ctx.fillStyle = color;
+          ctx.fillRect(box.x, box.y - 30, box.width, 30);
+          ctx.fillStyle = "white";
+          ctx.font = "bold 18px Kanit";
+          ctx.textAlign = "center";
+          ctx.fillText(text, box.x + (box.width/2), box.y - 8);
+      }
+  }
   // ฟังก์ชันวาดกรอบ
   function drawBox(ctx, box, color, text) {
       ctx.strokeStyle = color;
