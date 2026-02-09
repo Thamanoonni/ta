@@ -1608,14 +1608,23 @@ async function detectFaceLoop() {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       var imageBase64 = canvas.toDataURL('image/jpeg', 0.8);
       
-      // ปิดกล้องทันทีเพื่อความรวดเร็ว
-      closeCamera();
+      // *** แก้ไข 1: ส่งค่า true ไปบอกว่านี่คือการปิดแบบอัตโนมัติ (ซ่อนปุ่มสแกนต่อ) ***
+      closeCamera(true);
       
+      // *** แก้ไข 2: ขึ้น Loading ทันที เพื่อกัน User กดอะไรเล่นระหว่างรอ GPS ***
+      Swal.fire({ 
+          title: 'กำลังประมวลผล...', 
+          text: 'กรุณารอสักครู่ ห้ามปิดหน้าต่าง',
+          allowOutsideClick: false, 
+          didOpen: () => { Swal.showLoading() } 
+      });
+
       // ส่งข้อมูล
       sendScanData(imageBase64);
   }
 
-  function closeCamera() { 
+  // เพิ่ม parameter isAutoSnap = false เป็นค่าเริ่มต้น
+  function closeCamera(isAutoSnap = false) { 
       isScanning = false;
       var video = document.getElementById('videoFeed'); 
       if (video.srcObject) { 
@@ -1623,9 +1632,14 @@ async function detectFaceLoop() {
           video.srcObject = null; 
       } 
       document.getElementById('cameraModal').style.display = 'none'; 
-      // *** แก้ไข: เรียกฟังก์ชันนี้เพื่อแสดงปุ่มสแกนกลับมา ***
-      checkScanAvailability();  
+      
+      // *** แก้ไข: ถ้าปิดเพราะสแกนผ่าน (Auto) ให้ปุ่มซ่อนต่อไป (ไม่ต้องเรียก checkScanAvailability) ***
+      // ปุ่มจะกลับมาทำงานเองเมื่อฟังก์ชัน loadHistory() ทำงานเสร็จตอนบันทึกข้อมูลเรียบร้อย
+      if (!isAutoSnap) {
+          checkScanAvailability(); 
+      }
   }
+
   function snapPhoto() { var video = document.getElementById('videoFeed'); if (!video.srcObject) return; Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } }); var canvas = document.createElement('canvas'); var ctx = canvas.getContext('2d'); var maxWidth = 800; var scale = maxWidth / video.videoWidth; canvas.width = maxWidth; canvas.height = video.videoHeight * scale; ctx.drawImage(video, 0, 0, canvas.width, canvas.height); var imageBase64 = canvas.toDataURL('image/jpeg', 0.8); closeCamera(); sendScanData(imageBase64); }
   function closeCamera() { var video = document.getElementById('videoFeed'); if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; } document.getElementById('cameraModal').style.display = 'none'; }
   function sendScanData(imageBase64) { if (navigator.geolocation) { navigator.geolocation.getCurrentPosition(function(position) { var data = { action: 'scan', empId: currentUser, clientDate: getLocalDateString(), lat: position.coords.latitude, lng: position.coords.longitude, imageBase64: imageBase64 }; callAPI(data, function(res) { Swal.close(); if(res.status === 'success') { Swal.fire('บันทึกสำเร็จ', 'เวลา: ' + res.time, 'success'); loadHistory(); } else { Swal.fire('Error', res.message, 'error'); } }); }, function(error) { Swal.fire('Location Error', 'กรุณาเปิด GPS', 'error'); }); } else { Swal.fire('Error', 'Browser ไม่รองรับ GPS', 'error'); } }
