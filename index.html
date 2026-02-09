@@ -2215,18 +2215,19 @@ async function detectFaceLoop() {
   }
   
   // --- ฟังก์ชันวาดเค้าโครงหน้า (Face Guide Overlay) ---
+ // --- ฟังก์ชันวาดเค้าโครงหน้า (Face Guide Overlay) ---
   function drawFaceGuide(ctx, width, height, color, progress = 0) {
       const centerX = width / 2;
       const centerY = height / 2;
       
-      // กำหนดขนาดวงรี (ให้พอดีกับหน้าคนในระยะถือปกติ)
-      const guideWidth = width * 0.55; // กว้าง 55% ของจอ
-      const guideHeight = guideWidth * 1.3; // สูงเป็น 1.3 เท่าของความกว้าง (รูปไข่)
+      // กำหนดขนาดวงรี (รูปไข่)
+      const guideWidth = width * 0.55; 
+      const guideHeight = guideWidth * 1.3; 
 
       ctx.save();
-      ctx.beginPath();
       
-      // วาดวงรี
+      // 1. วาดเส้นพื้นหลัง (วงรีเต็มวง)
+      ctx.beginPath();
       ctx.ellipse(centerX, centerY, guideWidth / 2, guideHeight / 2, 0, 0, 2 * Math.PI);
       ctx.lineWidth = 5;
       ctx.strokeStyle = color;
@@ -2239,13 +2240,22 @@ async function detectFaceLoop() {
       }
       ctx.stroke();
 
-      // วาด Progress Bar วงกลมรอบนอก (ถ้ามีการนับ)
+      // 2. วาดเส้น Progress สีเขียว (วิ่งทับตามรูปทรงวงรีเป๊ะๆ)
       if (progress > 0) {
           ctx.beginPath();
-          ctx.arc(centerX, centerY, (guideWidth/2) + 20, -0.5 * Math.PI, (2 * Math.PI * (progress/100)) - 0.5 * Math.PI);
-          ctx.lineWidth = 8;
+          ctx.setLineDash([]); // เส้นทึบเสมอสำหรับ Progress
+          
+          // คำนวณมุม: เริ่มที่ -90 องศา (ด้านบนสุด)
+          const startAngle = -0.5 * Math.PI;
+          // สิ้นสุดตาม % ความคืบหน้า
+          const endAngle = startAngle + (2 * Math.PI * (progress / 100));
+
+          // ใช้ ellipse (วงรี) แทน arc (วงกลม)
+          ctx.ellipse(centerX, centerY, guideWidth / 2, guideHeight / 2, 0, startAngle, endAngle);
+          
+          ctx.lineWidth = 7; // วาดให้หนากว่าเส้นปกตินิดหน่อย จะได้ดูมีมิติ
           ctx.strokeStyle = '#198754'; // สีเขียว
-          ctx.lineCap = 'round';
+          ctx.lineCap = 'round'; // ปลายเส้นมนสวยงาม
           ctx.stroke();
       }
 
@@ -2261,7 +2271,6 @@ async function detectFaceLoop() {
           centerY: centerY
       };
   }
-
 </script>
 
 </body>
