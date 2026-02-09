@@ -1466,10 +1466,30 @@ async function detectFaceLoop() {
       const video = document.getElementById('videoFeed');
       const canvas = document.getElementById('scanOverlay');
       
-      const displaySize = { width: video.videoWidth, height: video.videoHeight };
-      faceapi.matchDimensions(canvas, displaySize);
+      // 1. คำนวณขนาดที่แท้จริงของวิดีโอเมื่อแสดงบนหน้าจอ (Aspect Ratio Matching)
+      const videoWidth = video.videoWidth;
+      const videoHeight = video.videoHeight;
+      const elementWidth = video.clientWidth;
+      const elementHeight = video.clientHeight;
 
-      // ใช้ tinyFaceDetector อย่างเดียวพอ (เร็วและไม่ต้องจับตา)
+      // หาสัดส่วนการย่อขยาย (Scale Factor)
+      const scale = Math.min(elementWidth / videoWidth, elementHeight / videoHeight);
+      const displayWidth = videoWidth * scale;
+      const displayHeight = videoHeight * scale;
+
+      // หาจุดเริ่มต้น (Offset) เพื่อให้ Canvas วาดตรงกลางเป๊ะ
+      const offsetX = (elementWidth - displayWidth) / 2;
+      const offsetY = (elementHeight - displayHeight) / 2;
+
+      // ตั้งค่า Canvas ให้เท่ากับขนาดที่แสดงผลจริง
+      canvas.width = elementWidth;
+      canvas.height = elementHeight;
+      
+      // กำหนดขนาดให้ face-api รู้เพื่อคำนวณกรอบ
+      const displaySize = { width: displayWidth, height: displayHeight };
+      
+      // *** หมายเหตุ: ไม่ต้องเรียก faceapi.matchDimensions แบบเดิมแล้ว เพราะเราคำนวณเอง ***
+
       const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
                                      .withFaceLandmarks()
                                      .withFaceDescriptor();
@@ -1477,15 +1497,34 @@ async function detectFaceLoop() {
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      // กลับด้าน Canvas (Mirror) เพื่อให้วาดกรอบตรงกับวิดีโอที่กลับด้าน
+      ctx.save();
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+
       if (detection) {
+          // ปรับขนาดกรอบให้ตรงกับขนาดที่แสดงผล
           const resizedDetections = faceapi.resizeResults(detection, displaySize);
+          
+          // ปรับตำแหน่งกรอบ (Shift Box) ให้มาอยู่ตรงกลางตาม Offset
           const box = resizedDetections.detection.box;
+          const shiftedBox = {
+              x: box.x + offsetX,
+              y: box.y + offsetY,
+              width: box.width,
+              height: box.height
+          };
+
+          const landmarks = resizedDetections.landmarks;
+          // ปรับตำแหน่ง Landmarks (ถ้าจะใช้วาดจุดตา ก็ต้อง Shift ด้วย)
+          // แต่วิธีนี้เราใช้แค่คำนวณค่า EAR ไม่ได้วาดจุดตาลงจอ เลยใช้ landmarks เดิมคำนวณได้เลย
 
           // 1. เช็คต้นฉบับ
           if (!referenceFaceDescriptor) {
-               drawBox(ctx, box, '#ffc107', "Auto Snap"); 
+               drawBox(ctx, shiftedBox, '#ffc107', "Auto Snap"); 
                document.getElementById('scanStatusText').innerText = "ไม่พบต้นฉบับ (ถ่ายอัตโนมัติ)";
                autoSnap(video);
+               ctx.restore(); // คืนค่า Canvas
                return;
           }
 
@@ -1494,63 +1533,62 @@ async function detectFaceLoop() {
           const match = faceMatcher.findBestMatch(detection.descriptor);
 
           if (match.label !== 'unknown' && match.distance < 0.5) {
-              // *** หน้าตรงกับเจ้าของ ***
-              matchCounter++; // เพิ่มค่าความมั่นใจ
+              isFaceMatched = true;
           } else {
-              // *** หน้าไม่ตรง หรือ หน้าหลุด ***
-              matchCounter = 0; // รีเซ็ตค่าใหม่เริ่มนับ 0
+              isFaceMatched = false;
+              eyesOpenDetected = false; 
           }
 
-          // 3. แสดงผลตามค่าความมั่นใจ (Progress)
-          if (matchCounter > 0) {
+          // 3. Logic ตรวจจับ
+          if (isFaceMatched) {
               
-              // คำนวณ % ความสำเร็จ
-              let progress = Math.min((matchCounter / REQUIRED_MATCHES) * 100, 100);
-              
-              if (matchCounter >= REQUIRED_MATCHES) {
-                  // *** ครบ 100% บันทึกทันที ***
-                  drawBox(ctx, box, '#198754', "Success 100%");
+              const leftEye = landmarks.getLeftEye();
+              const rightEye = landmarks.getRightEye();
+              const leftEAR = getEyeRatio(leftEye);
+              const rightEAR = getEyeRatio(rightEye);
+              const avgEAR = (leftEAR + rightEAR) / 2;
+
+              if (avgEAR > 0.22) { eyesOpenDetected = true; }
+
+              if (eyesOpenDetected && avgEAR < 0.18) {
+                  // *** สำเร็จ ***
+                  drawBox(ctx, shiftedBox, '#198754', "Success");
                   document.getElementById('scanStatusText').innerText = "ยืนยันตัวตนสำเร็จ!";
                   document.getElementById('scanStatusBox').classList.remove('bg-white', 'bg-primary');
                   document.getElementById('scanStatusBox').classList.add('bg-success', 'text-white');
 
                   isScanning = false;
-                  // ถ่ายรูปเลย
-                  autoSnap(video);
+                  setTimeout(() => { autoSnap(video); }, 300);
+                  ctx.restore(); 
                   return;
 
               } else {
-                  // *** กำลังโหลด (Progressing) ***
-                  // วาดกรอบสีน้ำเงิน
-                  drawBox(ctx, box, '#0d6efd', `Verifying ${Math.floor(progress)}%`);
-                  
-                  document.getElementById('scanStatusText').innerText = `กำลังตรวจสอบ... ถือนิ่งๆ ${Math.floor(progress)}%`;
+                  // *** รอ Blink ***
+                  drawBox(ctx, shiftedBox, '#0d6efd'); 
+                  document.getElementById('scanStatusText').innerText = "กรุณากระพริบตา (Blink Eyes)";
                   document.getElementById('scanStatusBox').classList.remove('bg-white', 'bg-success');
                   document.getElementById('scanStatusBox').classList.add('bg-primary', 'text-white');
               }
 
           } else {
-              // *** หน้าไม่ถูกต้อง ***
-              drawBox(ctx, box, '#dc3545', 'Wrong Face'); // แดง
+              // *** ไม่ตรง ***
+              drawBox(ctx, shiftedBox, '#dc3545'); 
               document.getElementById('scanStatusText').innerText = "ใบหน้าไม่ถูกต้อง";
               document.getElementById('scanStatusBox').classList.remove('bg-success', 'bg-primary', 'text-white');
               document.getElementById('scanStatusBox').classList.add('bg-white');
           }
           
-          // วนลูป (ความเร็วประมาณ 100ms)
-          // ดังนั้น 10 ครั้ง = ประมาณ 1 วินาที
           setTimeout(detectFaceLoop, 100);
 
       } else {
-          // ไม่เจอหน้า รีเซ็ต
-          matchCounter = 0;
           document.getElementById('scanStatusText').innerText = "กรุณามองกล้อง...";
           document.getElementById('scanStatusBox').classList.remove('bg-success', 'bg-primary', 'text-white');
           document.getElementById('scanStatusBox').classList.add('bg-white');
           setTimeout(detectFaceLoop, 100);
       }
+      
+      ctx.restore(); // คืนค่า Canvas ที่กลับด้านไว้
   }
-
   // แก้ไขฟังก์ชันวาดกรอบนิดหน่อยให้รองรับข้อความ Progress
   function drawBox(ctx, box, color, text) {
       ctx.strokeStyle = color;
