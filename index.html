@@ -1460,7 +1460,7 @@ function performLoginSuccess(empId, name, photo, allowedApps, sysConfig) {
   // ตัวแปรจำสถานะว่าหน้าตรงกันแล้ว
   //var isFaceMatched = false;
   //var eyesOpenDetected = false; // *** เพิ่มตัวแปรนี้: เพื่อเช็คว่าลืมตาแล้วหรือยัง ***
-
+/*
 async function detectFaceLoop() {
       if (!isScanning) return;
       
@@ -1603,6 +1603,156 @@ async function detectFaceLoop() {
 
       ctx.restore(); // Restore Mirror Effect
       
+      setTimeout(detectFaceLoop, 100);
+  }
+ */
+  async function detectFaceLoop() {
+      if (!isScanning) return;
+      
+      const video = document.getElementById('videoFeed');
+      const canvas = document.getElementById('scanOverlay');
+      
+      // 1. Setup Canvas & Scale
+      const videoWidth = video.videoWidth;
+      const videoHeight = video.videoHeight;
+      const elementWidth = video.clientWidth;
+      const elementHeight = video.clientHeight;
+
+      const scale = Math.min(elementWidth / videoWidth, elementHeight / videoHeight);
+      const displayWidth = videoWidth * scale;
+      const displayHeight = videoHeight * scale;
+      const offsetX = (elementWidth - displayWidth) / 2;
+      const offsetY = (elementHeight - displayHeight) / 2;
+      const displaySize = { width: displayWidth, height: displayHeight };
+
+      // ตั้งค่า Canvas
+      canvas.width = elementWidth;
+      canvas.height = elementHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // กลับด้าน Canvas (Mirror)
+      ctx.save();
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+
+      // วาด Guide รอไว้
+      let guideColor = 'white'; 
+      let guideStatusText = "วางใบหน้าในกรอบ";
+      let progressVal = 0;
+      const guideArea = drawFaceGuide(ctx, elementWidth, elementHeight, 'white'); 
+
+      // ตรวจจับหน้า
+      const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+                                     .withFaceLandmarks()
+                                     .withFaceDescriptor();
+
+      if (detection) {
+          const resizedDetections = faceapi.resizeResults(detection, displaySize);
+          const box = resizedDetections.detection.box;
+
+          // คำนวณตำแหน่งหน้า (Shift)
+          const faceCenterX = (box.x + offsetX) + (box.width / 2);
+          const faceCenterY = (box.y + offsetY) + (box.height / 2);
+
+          // ตรวจว่าหน้าอยู่ตรงกลางไหม
+          const distToCenter = Math.sqrt(
+              Math.pow(faceCenterX - guideArea.centerX, 2) + 
+              Math.pow(faceCenterY - guideArea.centerY, 2)
+          );
+          const isCentered = distToCenter < 80; 
+
+          if (isCentered) {
+              
+              // *** จุดที่แก้ไข: เช็คต้นฉบับ ถ้าไม่มี -> ห้ามผ่าน ***
+              if (!referenceFaceDescriptor) {
+                   // เปลี่ยนเป็นสีแดง
+                   guideColor = '#dc3545';
+                   // แจ้งเตือนให้ติดต่อ Admin
+                   guideStatusText = "ไม่พบรูปในระบบ (ติดต่อ Admin)";
+                   
+                   // *** สำคัญ: เอาบรรทัด autoSnap(video) ออก ***
+                   
+                   // วาดผลลัพธ์ (แดง) แล้วจบการทำงานรอบนี้ (ไม่บันทึก)
+                   drawFaceGuide(ctx, elementWidth, elementHeight, guideColor);
+                   document.getElementById('scanStatusText').innerText = guideStatusText;
+                   
+                   const statusBox = document.getElementById('scanStatusBox');
+                   statusBox.className = "px-4 py-2 rounded-pill shadow-sm d-inline-block bg-danger text-white";
+                   
+                   ctx.restore(); 
+                   // วนลูปต่อ (เพื่อให้เห็นข้อความแดงค้างไว้) แต่ไม่บันทึก
+                   setTimeout(detectFaceLoop, 100); 
+                   return;
+              }
+
+              // ถ้ามีต้นฉบับ -> เทียบหน้าต่อ
+              const faceMatcher = new faceapi.FaceMatcher(referenceFaceDescriptor, 0.55);
+              const match = faceMatcher.findBestMatch(detection.descriptor);
+
+              if (match.label !== 'unknown' && match.distance < 0.5) {
+                  // หน้าตรง + ถูกคน -> นับเวลา
+                  matchCounter++;
+                  progressVal = Math.min((matchCounter / REQUIRED_MATCHES) * 100, 100);
+                  
+                  if (matchCounter >= REQUIRED_MATCHES) {
+                      // Success
+                      guideColor = '#198754'; // เขียว
+                      guideStatusText = "ยืนยันสำเร็จ!";
+                      
+                      // วาดทับด้วยสีเขียว
+                      ctx.clearRect(0, 0, canvas.width, canvas.height);
+                      drawFaceGuide(ctx, elementWidth, elementHeight, guideColor, 100);
+                      
+                      document.getElementById('scanStatusText').innerText = guideStatusText;
+                      document.getElementById('scanStatusBox').className = "px-4 py-2 rounded-pill shadow-sm d-inline-block bg-success text-white";
+
+                      isScanning = false;
+                      autoSnap(video);
+                      ctx.restore(); return;
+
+                  } else {
+                      // Counting
+                      guideColor = '#0d6efd'; // น้ำเงิน
+                      guideStatusText = `อยู่นิ่งๆ... ${Math.floor(progressVal)}%`;
+                  }
+
+              } else {
+                  // หน้าไม่ตรง (Wrong Person)
+                  matchCounter = 0;
+                  guideColor = '#dc3545'; // แดง
+                  guideStatusText = "ใบหน้าไม่ถูกต้อง";
+              }
+
+          } else {
+              // หน้าไม่อยู่ตรงกลาง
+              matchCounter = 0;
+              guideColor = 'white'; 
+              guideStatusText = "ขยับหน้าให้ตรงกรอบ";
+          }
+
+      } else {
+          // ไม่เจอหน้า
+          matchCounter = 0;
+          guideColor = 'white';
+          guideStatusText = "กรุณามองกล้อง";
+      }
+
+      // วาด Guide
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawFaceGuide(ctx, elementWidth, elementHeight, guideColor, progressVal);
+
+      // อัปเดต Text
+      document.getElementById('scanStatusText').innerText = guideStatusText;
+      
+      const statusBox = document.getElementById('scanStatusBox');
+      statusBox.className = "px-4 py-2 rounded-pill shadow-sm d-inline-block"; 
+      if (guideColor === '#dc3545') statusBox.classList.add('bg-danger', 'text-white');
+      else if (guideColor === '#0d6efd') statusBox.classList.add('bg-primary', 'text-white');
+      else if (guideColor === '#198754') statusBox.classList.add('bg-success', 'text-white');
+      else statusBox.classList.add('bg-white', 'text-dark');
+
+      ctx.restore(); 
       setTimeout(detectFaceLoop, 100);
   }
   // แก้ไขฟังก์ชันวาดกรอบนิดหน่อยให้รองรับข้อความ Progress
