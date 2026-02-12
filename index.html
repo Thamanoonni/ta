@@ -1989,6 +1989,7 @@ async function detectFaceLoop() {
   }
 
   // 3. ค้นหา (Search + Filter Dept) *** แก้ไขตามโจทย์ข้อ 2 ***
+  /*
   function filterUserTable() {
       var txt = document.getElementById('searchUser').value.toLowerCase().trim();
       var deptFilter = document.getElementById('filterDept').value; // ค่าจาก Dropdown
@@ -2001,6 +2002,23 @@ async function detectFaceLoop() {
       renderUserTable(filtered);
   }
 
+  */ 
+  // 3. ค้นหา (Search + Filter Dept) *** แก้ไขเรื่องตัวเลขแผนก ***
+  function filterUserTable() {
+      var txt = document.getElementById('searchUser').value.toLowerCase().trim();
+      var deptFilter = document.getElementById('filterDept').value; // ค่าจาก Dropdown (เป็น String เสมอ)
+
+      var filtered = allUsersData.filter(u => {
+          // ค้นหา Text
+          var matchText = (String(u.empId).toLowerCase().includes(txt) || String(u.fname).toLowerCase().includes(txt));
+          
+          // ค้นหาแผนก (แปลง u.dept เป็น String ก่อนเทียบ)
+          var matchDept = (deptFilter === "" || String(u.dept) === deptFilter);
+          
+          return matchText && matchDept;
+      });
+      renderUserTable(filtered);
+  }
   // 4. เปิด Modal (เพิ่ม/แก้ไข)
   function openUserModal(mode, empId) {
       if(!userModal) userModal = new bootstrap.Modal(document.getElementById('userFormModal'));
