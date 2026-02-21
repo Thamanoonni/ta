@@ -411,11 +411,32 @@
                   </div>
               </div>
 
-              <div class="p-2 px-3 bg-success text-white d-flex justify-content-between align-items-center rounded-bottom">
+              <div class="p-2 px-3 bg-success text-white d-flex justify-content-between align-items-center">
                   <span class="fw-bold" style="font-size: 0.9rem;">เงินได้สุทธิ</span>
                   <h4 class="m-0 fw-bold" id="ps_netPay">0</h4>
               </div>
+
+              <div class="bg-primary text-white p-2 rounded-bottom" style="font-size: 0.75rem;">
+                  <div class="row g-0">
+                      <div class="col-4 border-end border-light border-opacity-25 px-2">
+                          <div class="text-start opacity-75" style="font-size: 0.65rem;">รายได้สะสม</div>
+                          <div class="fw-bold text-end mt-1" id="ps_accIncome">0</div>
+                      </div>
+                      <div class="col-4 border-end border-light border-opacity-25 px-2">
+                          <div class="text-start opacity-75" style="font-size: 0.65rem;">ภาษีสะสม</div>
+                          <div class="fw-bold text-end mt-1" id="ps_accTax">0</div>
+                      </div>
+                      <div class="col-4 px-2">
+                          <div class="text-start opacity-75" style="font-size: 0.65rem;">ประกันสังคมสะสม</div>
+                          <div class="fw-bold text-end mt-1" id="ps_accSSO">0</div>
+                      </div>
+                  </div>
+              </div>
+
+
           </div>
+          
+
       </div>
 
       <div class="px-3">
@@ -2698,8 +2719,14 @@ async function detectFaceLoop() {
 
       // --- ยอดรับสุทธิ ---
       const netPay = parseFloat(data['เงินเดือนรับ'] || (totalIncome - totalDeduct));
-      document.getElementById('ps_netPay').innerText = formatMoney(netPay) + ' ฿';
+      document.getElementById('ps_netPay').innerText = formatMoney(netPay);
+
+      // --- ข้อมูลสะสมต่อปี (YTD) ---
+      document.getElementById('ps_accIncome').innerText = formatMoney(data['รายได้สะสมต่อปี']);
+      document.getElementById('ps_accTax').innerText = formatMoney(data['ภาษีสะสมต่อปี']);
+      document.getElementById('ps_accSSO').innerText = formatMoney(data['ประกันสังคมต่อปี']);
   }
+  
 </script>
 
 </body>
