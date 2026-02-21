@@ -366,7 +366,7 @@
               <button onclick="processPayslipCSV()" class="btn btn-success w-100 fw-bold"><i class="bi bi-upload"></i> อัปโหลดและนำเข้า</button>
           </div>
       </div>
-
+      <!--
       <div id="userPayslipSection" class="hidden px-1 fade-in">
           <div class="card p-3 shadow-sm border-0 mb-3">
               <label class="form-label small fw-bold text-muted">เลือกงวดการจ่ายเงิน:</label>
@@ -384,6 +384,60 @@
                   <div class="text-end">
                       <div id="ps_period" class="fw-bold">01/2568</div>
                       <small id="ps_date">จ่าย: 25/01/2568</small>
+                  </div>
+              </div>
+              
+              <div class="p-3 bg-light border-bottom small">
+                  <div class="row">
+                      <div class="col-6 text-muted">รหัสพนักงาน: <strong class="text-dark" id="ps_empNo">-</strong></div>
+                      <div class="col-6 text-muted text-end">รหัสแผนก: <strong class="text-dark" id="ps_dept">-</strong></div>
+                  </div>
+                  <div class="row mt-1">
+                      <div class="col-12 text-muted">ธนาคาร: <strong class="text-dark" id="ps_bank">-</strong> <span id="ps_accNo"></span></div>
+                  </div>
+              </div>
+
+              <div class="p-3">
+                  <div class="row g-3">
+                      <div class="col-6 border-end">
+                          <h6 class="fw-bold text-primary border-bottom pb-2 mb-2"><i class="bi bi-plus-circle"></i> รายได้</h6>
+                          <div id="ps_incomeList" class="small"></div>
+                          <div class="d-flex justify-content-between fw-bold text-primary mt-3 pt-2 border-top">
+                              <span>รวมรายได้</span>
+                              <span id="ps_totalIncome">0.00</span>
+                          </div>
+                      </div>
+                      
+                      <div class="col-6">
+                          <h6 class="fw-bold text-warning border-bottom pb-2 mb-2"><i class="bi bi-dash-circle"></i> รายการหัก</h6>
+                          <div id="ps_deductList" class="small"></div>
+                          <div class="d-flex justify-content-between fw-bold text-warning mt-3 pt-2 border-top">
+                              <span>รวมรายการหัก</span>
+                              <span id="ps_totalDeduct">0.00</span>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <div class="p-3 bg-success text-white text-center rounded-bottom">
+                  <span class="d-block opacity-75 small">เงินเดือนสุทธิ (Net Pay)</span>
+                  <h2 class="m-0 fw-bold" id="ps_netPay">0.00</h2>
+              </div>
+          </div>
+      </div> -->
+
+      <div id="userPayslipSection" class="hidden px-1 fade-in">
+          <div id="payslipCard" class="card shadow-sm border-0 hidden">
+              <div class="bg-primary text-white p-3 rounded-top d-flex justify-content-between align-items-start">
+                  <div>
+                      <h5 class="m-0 fw-bold mb-1">ใบแจ้งเงินเดือน</h5>
+                      <small class="companyNameText opacity-75">บริษัท...</small>
+                  </div>
+                  <div class="text-end">
+                      <select id="payslipPeriodSelect" class="form-select form-select-sm bg-white text-primary fw-bold border-0 shadow-sm mb-1" style="border-radius: 8px; cursor: pointer; min-width: 100px;" onchange="loadPayslipData()">
+                          <option value="" selected disabled>โหลดงวด...</option>
+                      </select>
+                      <small id="ps_date" class="opacity-75 d-block mt-1">จ่าย: -</small>
                   </div>
               </div>
               
@@ -2593,18 +2647,34 @@ async function detectFaceLoop() {
 
   // --- 4. ฝั่ง User: ดึงงวด และข้อมูลสลิป ---
   function loadPayslipPeriods() {
-      document.getElementById('payslipCard').classList.add('hidden');
       const select = document.getElementById('payslipPeriodSelect');
       select.innerHTML = '<option value="" selected disabled>กำลังโหลด...</option>';
       
+      // แสดงโครงสลิปขึ้นมาเลยเพื่อให้เห็น Header
+      document.getElementById('payslipCard').classList.remove('hidden');
+      
+      // ล้างข้อมูลหน้าจอระหว่างรอ
+      document.getElementById('ps_incomeList').innerHTML = '';
+      document.getElementById('ps_deductList').innerHTML = '';
+      document.getElementById('ps_totalIncome').innerText = '0.00';
+      document.getElementById('ps_totalDeduct').innerText = '0.00';
+      document.getElementById('ps_netPay').innerText = '0.00';
+
       callAPI({ action: 'getPayslipPeriods', empId: currentUser }, function(res) {
           if (res.status === 'success' && res.data.length > 0) {
-              select.innerHTML = '<option value="" selected disabled>-- เลือกงวด --</option>';
+              select.innerHTML = '';
               res.data.forEach(p => {
-                  select.innerHTML += `<option value="${p}">${p}</option>`;
+                  select.innerHTML += `<option value="${p}">งวด ${p}</option>`;
               });
+              
+              // *** จุดสำคัญ: สั่งให้เลือกงวดแรก (ล่าสุด) และโหลดข้อมูลทันที ***
+              select.selectedIndex = 0; 
+              loadPayslipData();
+              
           } else {
-              select.innerHTML = '<option value="" selected disabled>ไม่มีประวัติสลิปเงินเดือน</option>';
+              select.innerHTML = '<option value="" selected disabled>ไม่มีข้อมูล</option>';
+              Swal.fire('แจ้งเตือน', 'ไม่พบประวัติสลิปเงินเดือนของคุณ', 'info');
+              document.getElementById('payslipCard').classList.add('hidden');
           }
       });
   }
@@ -2613,7 +2683,7 @@ async function detectFaceLoop() {
       const period = document.getElementById('payslipPeriodSelect').value;
       if (!period) return;
 
-      Swal.fire({ title: 'กำลังโหลด...', didOpen: () => Swal.showLoading() });
+      Swal.fire({ title: 'กำลังดึงข้อมูลสลิป...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       
       callAPI({ action: 'getPayslip', empId: currentUser, period: period }, function(res) {
           Swal.close();
@@ -2627,15 +2697,12 @@ async function detectFaceLoop() {
 
   // --- 5. เรนเดอร์หน้าตา Payslip (โชว์เฉพาะค่า > 0) ---
   function renderPayslipUI(data) {
-      document.getElementById('payslipCard').classList.remove('hidden');
-
-      // ข้อมูลทั่วไป
-      document.getElementById('ps_period').innerText = 'งวด ' + data['งวด'];
-      document.getElementById('ps_date').innerText = 'วันที่จ่าย: ' + data['วันที่จ่าย'];
-      document.getElementById('ps_empNo').innerText = data['EMP_NO'];
-      document.getElementById('ps_dept').innerText = data['DEPT_CODE'];
-      document.getElementById('ps_bank').innerText = data['ธนาคาร'];
-      document.getElementById('ps_accNo').innerText = data['เลขบัญชีธนาคาร'];
+      // อัปเดตข้อมูลทั่วไป (ไม่ต้องอัปเดตงวดแล้ว เพราะแสดงอยู่ใน Dropdown)
+      document.getElementById('ps_date').innerText = 'วันที่จ่าย: ' + (data['วันที่จ่าย'] || '-');
+      document.getElementById('ps_empNo').innerText = data['EMP_NO'] || '-';
+      document.getElementById('ps_dept').innerText = data['DEPT_CODE'] || '-';
+      document.getElementById('ps_bank').innerText = data['ธนาคาร'] || '-';
+      document.getElementById('ps_accNo').innerText = data['เลขบัญชีธนาคาร'] || '';
 
       const formatMoney = (num) => parseFloat(num || 0).toLocaleString('th-TH', {minimumFractionDigits: 2});
 
@@ -2644,7 +2711,7 @@ async function detectFaceLoop() {
       let totalIncome = 0;
       incomeKeys.forEach(key => {
           let val = parseFloat(data[key] || 0);
-          if (val > 0) { // แสดงเฉพาะมากกว่า 0
+          if (val > 0) { 
               incomeHtml += `<div class="d-flex justify-content-between text-secondary mb-1">
                                 <span>${key}</span> <span class="text-dark">${formatMoney(val)}</span>
                              </div>`;
@@ -2659,19 +2726,17 @@ async function detectFaceLoop() {
       let totalDeduct = 0;
       deductKeys.forEach(key => {
           let val = parseFloat(data[key] || 0);
-          if (val > 0) { // แสดงเฉพาะมากกว่า 0
+          if (val > 0) { 
               deductHtml += `<div class="d-flex justify-content-between text-secondary mb-1">
                                 <span>${key}</span> <span class="text-dark">${formatMoney(val)}</span>
                              </div>`;
               totalDeduct += val;
           }
       });
-      // เปลี่ยนสีข้อความรวมของส้มให้โดดเด่นขึ้น
       document.getElementById('ps_deductList').innerHTML = deductHtml || '<div class="text-muted">-</div>';
       document.getElementById('ps_totalDeduct').innerText = formatMoney(totalDeduct);
 
       // --- ยอดรับสุทธิ ---
-      // (ดึงจาก CSV ตรง 'เงินเดือนรับ' หรือจะเอา totalIncome - totalDeduct ก็ได้)
       const netPay = parseFloat(data['เงินเดือนรับ'] || (totalIncome - totalDeduct));
       document.getElementById('ps_netPay').innerText = formatMoney(netPay) + ' ฿';
   }
