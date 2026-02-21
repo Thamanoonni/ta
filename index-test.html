@@ -367,7 +367,9 @@
           </div>
       </div>
     
-      <div id="userPayslipSection" class="hidden px-0 fade-in"> <div id="payslipCard" class="card shadow-sm border-0 hidden mx-2 mb-3"> <div class="bg-primary text-white p-2 rounded-top d-flex justify-content-between align-items-start">
+      <div id="userPayslipSection" class="hidden px-0 fade-in">
+          <div id="payslipCard" class="card shadow-sm border-0 hidden mx-2 mb-3">
+              <div class="bg-primary text-white p-2 rounded-top d-flex justify-content-between align-items-start">
                   <div>
                       <h6 class="m-0 fw-bold mb-1">ใบแจ้งเงินเดือน</h6>
                       <small class="companyNameText opacity-75" style="font-size: 0.75rem;">บริษัท...</small>
@@ -385,13 +387,15 @@
                       <span>รหัส: <strong class="text-dark" id="ps_empNo">-</strong></span>
                       <span>แผนก: <strong class="text-dark" id="ps_dept">-</strong></span>
                   </div>
-                  <div class="text-muted">
-                      ธนาคาร: <strong class="text-dark" id="ps_bank">-</strong> <span id="ps_accNo"></span>
+                  <div class="d-flex justify-content-between text-muted">
+                      <span>ธนาคาร: <strong class="text-dark" id="ps_bank">-</strong> <span id="ps_accNo"></span></span>
+                      <span>ฐานเงินเดือน: <strong class="text-dark" id="ps_baseSalary">-</strong></span>
                   </div>
               </div>
 
               <div class="p-2">
-                  <div class="row g-2"> <div class="col-6 border-end pe-2">
+                  <div class="row g-2">
+                      <div class="col-6 border-end pe-2">
                           <h6 class="fw-bold text-primary border-bottom pb-1 mb-2" style="font-size: 0.85rem;"><i class="bi bi-plus-circle"></i> รายได้</h6>
                           <div id="ps_incomeList" style="font-size: 0.75rem;"></div>
                           <div class="d-flex justify-content-between fw-bold text-primary mt-2 pt-1 border-top" style="font-size: 0.8rem;">
@@ -401,9 +405,9 @@
                       </div>
                       
                       <div class="col-6 ps-2">
-                          <h6 class="fw-bold text-warning border-bottom pb-1 mb-2" style="font-size: 0.85rem;"><i class="bi bi-dash-circle"></i> รายการหัก</h6>
+                          <h6 class="fw-bold text-danger border-bottom pb-1 mb-2" style="font-size: 0.85rem;"><i class="bi bi-dash-circle"></i> รายการหัก</h6>
                           <div id="ps_deductList" style="font-size: 0.75rem;"></div>
-                          <div class="d-flex justify-content-between fw-bold text-warning mt-2 pt-1 border-top" style="font-size: 0.8rem;">
+                          <div class="d-flex justify-content-between fw-bold text-danger mt-2 pt-1 border-top" style="font-size: 0.8rem;">
                               <span>รวมจ่าย :</span>
                               <span id="ps_totalDeduct">0</span>
                           </div>
@@ -432,11 +436,7 @@
                       </div>
                   </div>
               </div>
-
-
           </div>
-          
-
       </div>
 
       <div class="px-3">
@@ -2547,7 +2547,7 @@ async function detectFaceLoop() {
   // ==========================================
 
   // --- 1. หมวดหมู่ Column อ้างอิงจาก CSV ---
-  const incomeKeys = ['เงินเดือน', 'ค่าตำแหน่ง', 'ค่าเช่าบ้าน', 'ค่ากะ', 'ค่าฝีมือ', 'ค่าครองชีพ', 'เบี้ยยังชีพ', 'รายได้อื่นๆ', 'เบี้ยขยัน', 'ot1 amt', 'ot15 amt', 'ot2 amt', 'ot3 amt'];
+  const incomeKeys = ['เงินเดือนรับ', 'ค่าตำแหน่ง', 'ค่าเช่าบ้าน', 'ค่ากะ', 'ค่าฝีมือ', 'ค่าครองชีพ', 'เบี้ยยังชีพ', 'รายได้อื่นๆ', 'เบี้ยขยัน', 'ot1 amt', 'ot15 amt', 'ot2 amt', 'ot3 amt'];
   const deductKeys = ['ค่าฌาปนกิจ', 'ประกันสังคม', 'หักสาย', 'ภาษี'];
 
   // --- 2. ฟังก์ชันเพิ่มลงในระบบ Navigation (openApp) ---
@@ -2655,6 +2655,7 @@ async function detectFaceLoop() {
   }
 
   // --- 5. เรนเดอร์หน้าตา Payslip (โชว์เฉพาะค่า > 0) ---
+  // --- 5. เรนเดอร์หน้าตา Payslip (โชว์เฉพาะค่า > 0) ---
   function renderPayslipUI(data) {
       document.getElementById('ps_date').innerText = 'จ่าย: ' + (data['วันที่จ่าย'] || '-');
       document.getElementById('ps_empNo').innerText = data['EMP_NO'] || '-';
@@ -2662,8 +2663,11 @@ async function detectFaceLoop() {
       document.getElementById('ps_bank').innerText = data['ธนาคาร'] || '-';
       document.getElementById('ps_accNo').innerText = data['เลขบัญชีธนาคาร'] || '';
 
-      // ปรับ Format Money: ปัดเศษเป็นจำนวนเต็ม และใส่ลูกน้ำ (ไม่เอาทศนิยม)
+      // ปรับ Format Money: ปัดเศษเป็นจำนวนเต็ม และใส่ลูกน้ำ
       const formatMoney = (num) => Math.round(parseFloat(num || 0)).toLocaleString('th-TH');
+
+      // แสดงค่าฐานเงินเดือน (Column H) ต่อท้ายบรรทัดธนาคาร
+      document.getElementById('ps_baseSalary').innerText = formatMoney(data['เงินเดือน']);
 
       // --- สร้างรายการรายได้ (สีฟ้า) ---
       let incomeHtml = '';
@@ -2673,8 +2677,8 @@ async function detectFaceLoop() {
           if (val > 0) { 
               let displayLabel = key; // ชื่อตั้งต้น
               
-              // ตรวจสอบและดึงข้อมูลมาต่อท้ายในวงเล็บ
-              if (key === 'เงินเดือน') {
+              // แก้ไข: เปลี่ยนมาเช็ค 'เงินเดือนรับ' แทน และใส่จำนวนวันทำงานลงไปในวงเล็บ
+              if (key === 'เงินเดือนรับ') {
                   let workDays = data['วันทำงาน'] || 0;
                   displayLabel = `เงินเดือน (${workDays})`;
               } else if (key === 'ot1 amt') {
@@ -2701,7 +2705,7 @@ async function detectFaceLoop() {
       document.getElementById('ps_incomeList').innerHTML = incomeHtml || '<div class="text-muted">-</div>';
       document.getElementById('ps_totalIncome').innerText = formatMoney(totalIncome);
 
-      // --- สร้างรายการหัก (สีส้ม) ---
+      // --- สร้างรายการหัก (สีแดง) ---
       let deductHtml = '';
       let totalDeduct = 0;
       deductKeys.forEach(key => {
@@ -2718,7 +2722,6 @@ async function detectFaceLoop() {
       document.getElementById('ps_totalDeduct').innerText = formatMoney(totalDeduct);
 
       // --- ยอดรับสุทธิ ---
-      //const netPay = parseFloat(data['เงินเดือนรับ'] || (totalIncome - totalDeduct));
       const netPay = totalIncome - totalDeduct;
       document.getElementById('ps_netPay').innerText = formatMoney(netPay);
 
