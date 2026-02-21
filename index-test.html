@@ -928,7 +928,9 @@
           'taAppSection', 
           'adminDashboardSection', 
           'adminVerifySection', 
-          'adminUserSection'
+          'adminUserSection',
+          'adminImportPayslipSection', 
+          'userPayslipSection'
       ];
       
       allSections.forEach(function(id) {
@@ -956,6 +958,16 @@
           document.getElementById('adminUserSection').classList.remove('hidden');
           loadUserList();
       }
+      else if (appId === 'PAYSLIP') {
+          // ส่วนของพนักงานดูสลิป
+          document.getElementById('userPayslipSection').classList.remove('hidden');
+          loadPayslipPeriods();
+      }
+      else if (appId === 'IMPORT_PAYSLIP') {
+          // ส่วนของแอดมินนำเข้าสลิป
+          document.getElementById('adminImportPayslipSection').classList.remove('hidden');
+      }
+
       else {
           Swal.fire('Info', 'ระบบ ' + appId + ' กำลังพัฒนา', 'info');
           showPortal(); 
@@ -970,7 +982,9 @@
           'taAppSection', 
           'adminDashboardSection', 
           'adminVerifySection', 
-          'adminUserSection'
+          'adminUserSection',
+          'adminImportPayslipSection', 
+          'userPayslipSection'
       ];
       
       allSections.forEach(function(id) {
