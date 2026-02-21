@@ -2718,7 +2718,8 @@ async function detectFaceLoop() {
       document.getElementById('ps_totalDeduct').innerText = formatMoney(totalDeduct);
 
       // --- ยอดรับสุทธิ ---
-      const netPay = parseFloat(data['เงินเดือนรับ'] || (totalIncome - totalDeduct));
+      //const netPay = parseFloat(data['เงินเดือนรับ'] || (totalIncome - totalDeduct));
+      const netPay = totalIncome - totalDeduct;
       document.getElementById('ps_netPay').innerText = formatMoney(netPay);
 
       // --- ข้อมูลสะสมต่อปี (YTD) ---
@@ -2726,7 +2727,7 @@ async function detectFaceLoop() {
       document.getElementById('ps_accTax').innerText = formatMoney(data['ภาษีสะสมต่อปี']);
       document.getElementById('ps_accSSO').innerText = formatMoney(data['ประกันสังคมต่อปี']);
   }
-  
+
 </script>
 
 </body>
