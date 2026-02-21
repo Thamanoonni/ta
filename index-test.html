@@ -366,66 +366,7 @@
               <button onclick="processPayslipCSV()" class="btn btn-success w-100 fw-bold"><i class="bi bi-upload"></i> อัปโหลดและนำเข้า</button>
           </div>
       </div>
-      <!--
-      <div id="userPayslipSection" class="hidden px-1 fade-in">
-          <div class="card p-3 shadow-sm border-0 mb-3">
-              <label class="form-label small fw-bold text-muted">เลือกงวดการจ่ายเงิน:</label>
-              <select id="payslipPeriodSelect" class="form-select form-select-lg mb-3 bg-light" onchange="loadPayslipData()">
-                  <option value="" selected disabled>กำลังโหลดงวด...</option>
-              </select>
-          </div>
-
-          <div id="payslipCard" class="card shadow-sm border-0 hidden">
-              <div class="bg-primary text-white p-3 rounded-top d-flex justify-content-between align-items-center">
-                  <div>
-                      <h5 class="m-0 fw-bold">ใบแจ้งเงินเดือน</h5>
-                      <small class="companyNameText opacity-75">บริษัท...</small>
-                  </div>
-                  <div class="text-end">
-                      <div id="ps_period" class="fw-bold">01/2568</div>
-                      <small id="ps_date">จ่าย: 25/01/2568</small>
-                  </div>
-              </div>
-              
-              <div class="p-3 bg-light border-bottom small">
-                  <div class="row">
-                      <div class="col-6 text-muted">รหัสพนักงาน: <strong class="text-dark" id="ps_empNo">-</strong></div>
-                      <div class="col-6 text-muted text-end">รหัสแผนก: <strong class="text-dark" id="ps_dept">-</strong></div>
-                  </div>
-                  <div class="row mt-1">
-                      <div class="col-12 text-muted">ธนาคาร: <strong class="text-dark" id="ps_bank">-</strong> <span id="ps_accNo"></span></div>
-                  </div>
-              </div>
-
-              <div class="p-3">
-                  <div class="row g-3">
-                      <div class="col-6 border-end">
-                          <h6 class="fw-bold text-primary border-bottom pb-2 mb-2"><i class="bi bi-plus-circle"></i> รายได้</h6>
-                          <div id="ps_incomeList" class="small"></div>
-                          <div class="d-flex justify-content-between fw-bold text-primary mt-3 pt-2 border-top">
-                              <span>รวมรายได้</span>
-                              <span id="ps_totalIncome">0.00</span>
-                          </div>
-                      </div>
-                      
-                      <div class="col-6">
-                          <h6 class="fw-bold text-warning border-bottom pb-2 mb-2"><i class="bi bi-dash-circle"></i> รายการหัก</h6>
-                          <div id="ps_deductList" class="small"></div>
-                          <div class="d-flex justify-content-between fw-bold text-warning mt-3 pt-2 border-top">
-                              <span>รวมรายการหัก</span>
-                              <span id="ps_totalDeduct">0.00</span>
-                          </div>
-                      </div>
-                  </div>
-              </div>
-
-              <div class="p-3 bg-success text-white text-center rounded-bottom">
-                  <span class="d-block opacity-75 small">เงินเดือนสุทธิ (Net Pay)</span>
-                  <h2 class="m-0 fw-bold" id="ps_netPay">0.00</h2>
-              </div>
-          </div>
-      </div> -->
-
+    
       <div id="userPayslipSection" class="hidden px-1 fade-in">
           <div id="payslipCard" class="card shadow-sm border-0 hidden">
               <div class="bg-primary text-white p-3 rounded-top d-flex justify-content-between align-items-start">
