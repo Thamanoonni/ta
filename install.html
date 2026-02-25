@@ -70,6 +70,11 @@
 <body>
 
     <div class="container" id="mainCard">
+        <div id="inAppAlert" style="display: none; background: #f8d7da; color: #842029; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; border: 1px solid #f5c2c7;">
+            <b><i class="fa-solid fa-triangle-exclamation"></i> ไม่รองรับการติดตั้งผ่านแอปนี้</b><br>
+            กรุณากดปุ่ม <b>จุด 3 จุด</b> ด้านบนมุมขวา<br>แล้วเลือก <b>"เปิดในเบราว์เซอร์เริ่มต้น"</b> (Open in browser)
+        </div>
+
         <img src="https://thamanoonni.github.io/ta/icon-wda.png" class="logo">
         <h2>ติดตั้งแอปพลิเคชัน</h2>
         <p>Wisdom Time Attendance Portal<br>เพื่อความสะดวกในการเข้าใช้งาน</p>
@@ -77,6 +82,18 @@
         <button id="installBtn" class="btn btn-install" onclick="doInstall()">
             ติดตั้งลงเครื่อง
         </button>
+
+        <div id="androidInstructions" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: left;">
+            <div style="font-weight:bold; margin-bottom:10px; color:#333;">วิธีติดตั้งด้วยตัวเอง (Android):</div>
+            <div class="ios-step">
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+                <span>1. กดปุ่ม <b>"จุด 3 จุด"</b> ที่มุมขวาบนของจอ</span>
+            </div>
+            <div class="ios-step">
+                <i class="fa-solid fa-mobile-screen"></i>
+                <span>2. เลือก <b>"ติดตั้งแอป"</b> (Install app) หรือ<br><b>"เพิ่มลงในหน้าจอหลัก"</b> (Add to Home screen)</span>
+            </div>
+        </div>
 
         <div id="iosInstructions">
             <div style="font-weight:bold; margin-bottom:10px; color:#333;">วิธีติดตั้งบน iPhone/iPad:</div>
@@ -106,54 +123,65 @@
             navigator.serviceWorker.register('sw.js');
         }
 
-        // *** แก้ไขการตรวจสอบ iOS ให้รองรับ iPad ***
+        // ตรวจสอบอุปกรณ์และโหมดแอป
         const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) || 
                       (navigator.userAgent.includes("Macintosh") && navigator.maxTouchPoints > 1);
-                      
-        // ตรวจสอบว่าเปิดในโหมด App แล้วหรือยัง (Standalone)
         const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator.standalone);
+        
+        // ตรวจสอบว่าเปิดจากแอปแชทหรือไม่ (LINE, Facebook)
+        const ua = navigator.userAgent || navigator.vendor || window.opera;
+        const isInApp = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || (ua.indexOf("Line") > -1);
 
         const installBtn = document.getElementById('installBtn');
         const iosInstructions = document.getElementById('iosInstructions');
+        const androidInstructions = document.getElementById('androidInstructions');
         const shareArrow = document.getElementById('shareArrow');
+        const inAppAlert = document.getElementById('inAppAlert');
 
-        // Logic การแสดงผล
-        if (isIos && !isInStandaloneMode) {
-            // --- กรณีเป็น iOS (iPhone หรือ iPad) ---
-            installBtn.style.display = 'none';      // ซ่อนปุ่ม Install
-            iosInstructions.style.display = 'block';// โชว์วิธีทำ
-            shareArrow.style.display = 'block';     // โชว์ลูกศร
-        } else {
-            // --- กรณีเป็น Android หรือ PC ---
-            // รอ event beforeinstallprompt
+        if (isInApp) {
+            // 1. ถ้าเปิดผ่านแอปแชท ให้โชว์คำเตือนให้ไปเปิดใน Chrome/Safari
+            inAppAlert.style.display = 'block';
+        } else if (isIos && !isInStandaloneMode) {
+            // 2. กรณีเป็น iOS
+            iosInstructions.style.display = 'block';
+            shareArrow.style.display = 'block';
+        } else if (!isIos && !isInStandaloneMode) {
+            // 3. กรณีเป็น Android หรือ PC
             let deferredPrompt;
+            let promptFired = false;
+
             window.addEventListener('beforeinstallprompt', (e) => {
-                // ถ้าไม่ใช่ iOS ให้โชว์ปุ่ม Install
-                if (!isIos) {
-                    e.preventDefault();
-                    deferredPrompt = e;
-                    installBtn.style.display = 'block';
-                    
-                    // สร้างฟังก์ชัน Install สำหรับ Android scope นี้
-                    window.doInstall = async () => {
-                        if (deferredPrompt) {
-                            deferredPrompt.prompt();
-                            const { outcome } = await deferredPrompt.userChoice;
-                            deferredPrompt = null;
-                        }
-                    };
-                }
+                promptFired = true; // Event ทำงานแล้ว
+                e.preventDefault();
+                deferredPrompt = e;
+                
+                installBtn.style.display = 'block';
+                androidInstructions.style.display = 'none'; // ซ่อนวิธีทำ Manual
+                
+                window.doInstall = async () => {
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        deferredPrompt = null;
+                    }
+                };
             });
+
+            // ตรวจสอบหลังจาก 1.5 วินาที ถ้า Event ป๊อปอัปไม่ทำงาน ให้โชว์วิธีติดตั้งแบบ Manual แทน
+            setTimeout(() => {
+                if (!promptFired) {
+                    androidInstructions.style.display = 'block';
+                }
+            }, 1500);
         }
 
-        // ฟังก์ชัน Install (กัน Error กรณีเรียกก่อนกำหนด)
+        // ฟังก์ชัน Install (กัน Error)
         if (!window.doInstall) {
             window.doInstall = async () => { console.log('Install logic not ready'); };
         }
 
         function doExit() {
             try { window.close(); } catch (e) {}
-            // แก้ไข: เพิ่ม style="color:white;" ที่แท็ก <p>
             document.body.innerHTML = `
                 <div style="color:white; text-align:center; padding:20px;">
                     <h1>ขอบคุณครับ</h1>
@@ -162,7 +190,6 @@
         }
         
         window.addEventListener('appinstalled', () => {
-             // แก้ไข: เพิ่ม style="color:white;" ที่แท็ก <p>
              document.body.innerHTML = `
                 <div style="color:white; text-align:center; padding:20px;">
                     <h1>ติดตั้งเรียบร้อย!</h1>
