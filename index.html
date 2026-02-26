@@ -374,19 +374,7 @@
     
       <div id="userPayslipSection" class="hidden px-0 fade-in mt-4">
           <div id="payslipCard" class="card shadow-sm border-0 hidden mx-2 mb-3">
-              <!--
-              <div class="bg-primary text-white p-2 rounded-top d-flex justify-content-between align-items-start">
-                  <div>
-                      <h6 class="m-0 fw-bold mb-1">ใบแจ้งเงินเดือน</h6>
-                      <small id="ps_empNameDisplay" class="fw-bold text-warning" style="font-size: 0.85rem;">กำลังโหลด...</small>
-                  </div>
-                  <div class="text-end">
-                      <select id="payslipPeriodSelect" class="form-select form-select-sm bg-white text-primary fw-bold border-0 shadow-sm mb-1 py-1" style="border-radius: 6px; cursor: pointer; min-width: 90px; font-size: 0.8rem;" onchange="loadPayslipData()">
-                          <option value="" selected disabled>โหลดงวด...</option>
-                      </select>
-                      <small id="ps_date" class="opacity-75 d-block mt-1" style="font-size: 0.7rem;">จ่าย: -</small>
-                  </div>
-              </div> -->
+              
               <div class="bg-primary text-white p-2 rounded-top d-flex justify-content-between align-items-center">
                   
                   <div class="d-flex align-items-center">
@@ -2162,11 +2150,15 @@ async function detectFaceLoop() {
   function loadUserList() {
       Swal.fire({ title: 'กำลังโหลด...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
       
-      // FIXED: Use callAPI
       callAPI({ action: 'getAllUsers' }, function(res){
           Swal.close();
           if(res.status === 'success') {
               allUsersData = res.data;
+              
+              // *** เพิ่มคำสั่งเรียงลำดับ (Sort) ตามรหัสพนักงานตรงนี้ ***
+              // ใช้ localeCompare พร้อม numeric: true เพื่อให้เรียงตัวเลข 2 มาก่อน 10 ได้อย่างถูกต้อง
+              allUsersData.sort((a, b) => String(a.empId).localeCompare(String(b.empId), undefined, {numeric: true}));
+
               updateDeptDropdown(allUsersData); // อัปเดต Dropdown แผนก (ทั้ง Search และ Modal)
               renderUserTable(allUsersData);
           } else {
@@ -2174,7 +2166,6 @@ async function detectFaceLoop() {
           }
       });
   }
-
   // 2. สร้างตารางพนักงาน
   function renderUserTable(users) {
       var tbody = document.getElementById('userTableBody');
@@ -2766,191 +2757,7 @@ async function detectFaceLoop() {
       document.getElementById('ps_accTax').innerText = formatMoney(data['ภาษีสะสมต่อปี']);
       document.getElementById('ps_accSSO').innerText = formatMoney(data['ประกันสังคมต่อปี']);
   }
-  /*
-  function openApp(appId) {
-      var appConfig = systemConfigList.find(s => s.id === appId);
-      if (appConfig && (appConfig.type === 'External' || appId.startsWith('http'))) {
-          window.open(appId, '_blank'); 
-          return; 
-      }
 
-      var allSections = [
-          'portalSection', 
-          'taAppSection', 
-          'adminDashboardSection', 
-          'adminVerifySection', 
-          'adminUserSection',
-          'adminImportPayslipSection', 
-          'userPayslipSection'
-      ];
-      
-      allSections.forEach(function(id) {
-          var el = document.getElementById(id);
-          if (el) el.classList.add('hidden');
-      });
-
-      document.getElementById('btnBackToHome').classList.remove('hidden');
-
-      if (appId === 'TA') {
-          document.getElementById('taAppSection').classList.remove('hidden');
-          document.getElementById('historyDate').value = getLocalDateString();
-          loadHistory(); 
-      } 
-      else if (appId === 'DASHBOARD') {
-          document.getElementById('adminDashboardSection').classList.remove('hidden');
-          document.getElementById('statsDate').valueAsDate = new Date();
-          loadStats();
-      }
-      else if (appId === 'VERIFY') {
-          document.getElementById('adminVerifySection').classList.remove('hidden');
-          loadDeptForVerify();
-      }
-      else if (appId === 'USERS') {
-          document.getElementById('adminUserSection').classList.remove('hidden');
-          loadUserList();
-      }
-      else if (appId === 'PAYSLIP') {
-          // ส่วนของพนักงานดูสลิป
-          document.getElementById('userPayslipSection').classList.remove('hidden');
-          loadPayslipPeriods();
-      }
-      else if (appId === 'IMPORT_PAYSLIP') {
-          // ส่วนของแอดมินนำเข้าสลิป
-          document.getElementById('adminImportPayslipSection').classList.remove('hidden');
-      }
-
-      else {
-          Swal.fire('Info', 'ระบบ ' + appId + ' กำลังพัฒนา', 'info');
-          showPortal(); 
-      }
-  }
-
-  // --- 4. ฝั่ง User: ดึงงวด และข้อมูลสลิป ---
-  function loadPayslipPeriods() {
-      const select = document.getElementById('payslipPeriodSelect');
-      select.innerHTML = '<option value="" selected disabled>กำลังโหลด...</option>';
-      
-      // แสดงโครงสลิปขึ้นมาเลยเพื่อให้เห็น Header
-      document.getElementById('payslipCard').classList.remove('hidden');
-      
-      // ล้างข้อมูลหน้าจอระหว่างรอ
-      document.getElementById('ps_incomeList').innerHTML = '';
-      document.getElementById('ps_deductList').innerHTML = '';
-      document.getElementById('ps_totalIncome').innerText = '0.00';
-      document.getElementById('ps_totalDeduct').innerText = '0.00';
-      document.getElementById('ps_netPay').innerText = '0.00';
-
-      callAPI({ action: 'getPayslipPeriods', empId: currentUser }, function(res) {
-          if (res.status === 'success' && res.data.length > 0) {
-              select.innerHTML = '';
-              res.data.forEach(p => {
-                  select.innerHTML += `<option value="${p}">งวด ${p}</option>`;
-              });
-              
-              // *** จุดสำคัญ: สั่งให้เลือกงวดแรก (ล่าสุด) และโหลดข้อมูลทันที ***
-              select.selectedIndex = 0; 
-              loadPayslipData();
-              
-          } else {
-              select.innerHTML = '<option value="" selected disabled>ไม่มีข้อมูล</option>';
-              Swal.fire('แจ้งเตือน', 'ไม่พบประวัติสลิปเงินเดือนของคุณ', 'info');
-              document.getElementById('payslipCard').classList.add('hidden');
-          }
-      });
-  }
-
-  function loadPayslipData() {
-      const period = document.getElementById('payslipPeriodSelect').value;
-      if (!period) return;
-
-      Swal.fire({ title: 'กำลังดึงข้อมูลสลิป...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-      
-      callAPI({ action: 'getPayslip', empId: currentUser, period: period }, function(res) {
-          Swal.close();
-          if (res.status === 'success') {
-              renderPayslipUI(res.data);
-          } else {
-              Swal.fire('แจ้งเตือน', res.message, 'warning');
-          }
-      });
-  }
-
-  // --- 5. เรนเดอร์หน้าตา Payslip (โชว์เฉพาะค่า > 0) ---
-  function renderPayslipUI(data) {
-      document.getElementById('ps_date').innerText = 'จ่าย: ' + (data['วันที่จ่าย'] || '-');
-      document.getElementById('ps_empNo').innerText = data['EMP_NO'] || '-';
-      document.getElementById('ps_dept').innerText = data['DEPT_CODE'] || '-';
-      document.getElementById('ps_bank').innerText = data['ธนาคาร'] || '-';
-      document.getElementById('ps_accNo').innerText = data['เลขบัญชีธนาคาร'] || '';
-
-      // ปรับ Format Money: ปัดเศษเป็นจำนวนเต็ม และใส่ลูกน้ำ
-      const formatMoney = (num) => Math.round(parseFloat(num || 0)).toLocaleString('th-TH');
-
-      // แสดงค่าฐานเงินเดือน (Column H) ต่อท้ายบรรทัดธนาคาร
-      document.getElementById('ps_baseSalary').innerText = formatMoney(data['เงินเดือน']);
-
-      // --- สร้างรายการรายได้ (สีฟ้า) ---
-      let incomeHtml = '';
-      let totalIncome = 0;
-      incomeKeys.forEach(key => {
-          let val = parseFloat(data[key] || 0);
-          if (val > 0) { 
-              let displayLabel = key; // ชื่อตั้งต้น
-              
-              // แก้ไข: เปลี่ยนมาเช็ค 'เงินเดือนรับ' แทน และใส่จำนวนวันทำงานลงไปในวงเล็บ
-              if (key === 'เงินเดือนรับ') {
-                  let workDays = data['วันทำงาน'] || 0;
-                  displayLabel = `เงินเดือน (${workDays})`;
-              } else if (key === 'ot1 amt') {
-                  let hrs = parseFloat(data['OT1 (ช.ม.)'] || 0).toFixed(1);
-                  displayLabel = `OT 1 (${hrs})`;
-              } else if (key === 'ot15 amt') {
-                  let hrs = parseFloat(data['OT1.5 (ช.ม.)'] || 0).toFixed(1);
-                  displayLabel = `OT 1.5 (${hrs})`;
-              } else if (key === 'ot2 amt') {
-                  let hrs = parseFloat(data['OT2 (ช.ม.)'] || 0).toFixed(1);
-                  displayLabel = `OT 2 (${hrs})`;
-              } else if (key === 'ot3 amt') {
-                  let hrs = parseFloat(data['OT3 (ช.ม.)'] || 0).toFixed(1);
-                  displayLabel = `OT 3 (${hrs})`;
-              }
-
-              incomeHtml += `<div class="d-flex justify-content-between text-secondary mb-1">
-                                <span class="text-truncate pe-1">${displayLabel}</span> 
-                                <span class="text-dark">${formatMoney(val)}</span>
-                             </div>`;
-              totalIncome += val;
-          }
-      });
-      document.getElementById('ps_incomeList').innerHTML = incomeHtml || '<div class="text-muted">-</div>';
-      document.getElementById('ps_totalIncome').innerText = formatMoney(totalIncome);
-
-      // --- สร้างรายการหัก (สีแดง) ---
-      let deductHtml = '';
-      let totalDeduct = 0;
-      deductKeys.forEach(key => {
-          let val = parseFloat(data[key] || 0);
-          if (val > 0) { 
-              deductHtml += `<div class="d-flex justify-content-between text-secondary mb-1">
-                                <span class="text-truncate pe-1">${key}</span> 
-                                <span class="text-dark">${formatMoney(val)}</span>
-                             </div>`;
-              totalDeduct += val;
-          }
-      });
-      document.getElementById('ps_deductList').innerHTML = deductHtml || '<div class="text-muted">-</div>';
-      document.getElementById('ps_totalDeduct').innerText = formatMoney(totalDeduct);
-
-      // --- ยอดรับสุทธิ ---
-      const netPay = totalIncome - totalDeduct;
-      document.getElementById('ps_netPay').innerText = formatMoney(netPay);
-
-      // --- ข้อมูลสะสมต่อปี (YTD) ---
-      document.getElementById('ps_accIncome').innerText = formatMoney(data['รายได้สะสมต่อปี']);
-      document.getElementById('ps_accTax').innerText = formatMoney(data['ภาษีสะสมต่อปี']);
-      document.getElementById('ps_accSSO').innerText = formatMoney(data['ประกันสังคมต่อปี']);
-  }
-*/
 </script>
 
 </body>
