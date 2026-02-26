@@ -1161,13 +1161,26 @@ function loadHistory() {
       }
     });
   }
-
+/*
   function getMobileOS() {
     var ua = navigator.userAgent || navigator.vendor || window.opera;
     var platform = navigator.platform || "";
     if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return 'iOS';
     if (platform === 'MacIntel' && navigator.maxTouchPoints > 1) return 'iOS'; 
     if (/android/i.test(ua)) return 'Android';
+    return 'unknown';
+  } */ 
+  function getMobileOS() {
+    var ua = navigator.userAgent || navigator.vendor || window.opera;
+    var platform = navigator.platform || "";
+    if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return 'iOS';
+    if (platform === 'MacIntel' && navigator.maxTouchPoints > 1) return 'iOS'; 
+    if (/android/i.test(ua)) return 'Android';
+    
+    // *** เพิ่มการตรวจจับระบบปฏิบัติการ Windows ***
+    if (/Win/i.test(platform) || /Windows/i.test(ua)) return 'Windows';
+    if (/Mac/i.test(platform)) return 'Mac';
+    
     return 'unknown';
   }
 
