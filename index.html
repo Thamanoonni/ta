@@ -2620,19 +2620,20 @@ async function detectFaceLoop() {
       document.getElementById('ps_netPay').innerText = '0';
       document.getElementById('ps_baseSalary').innerText = '-';
 
-      // เช็คว่าเป็น Admin ไหม (โดยดูว่ามีสิทธิ์เมนู USERS หรือ All ไหม)
-      const isAdmin = userAllowedApps.includes('All') || userAllowedApps.includes('USERS');
-      
-      if (isAdmin) {
-          document.getElementById('ps_empNo_text').style.display = 'none';
-          document.getElementById('ps_empNo_input_group').style.display = 'flex';
-      } else {
-          document.getElementById('ps_empNo_text').style.display = 'inline-block';
-          document.getElementById('ps_empNo_text').innerText = currentPayslipEmpId;
-          document.getElementById('ps_empNo_input_group').style.display = 'none';
-      }
+      // ซ่อนช่องค้นหาไว้ก่อน (จะแสดงเมื่อ Server ยืนยันว่าคุณคือ Admin)
+      document.getElementById('ps_empNo_text').style.display = 'inline-block';
+      document.getElementById('ps_empNo_text').innerText = currentPayslipEmpId;
+      document.getElementById('ps_empNo_input_group').style.display = 'none';
 
-      callAPI({ action: 'getPayslipPeriods', empId: currentPayslipEmpId }, function(res) {
+      // *** เพิ่มพารามิเตอร์ requesterId: currentUser เพื่อส่งไปตรวจสิทธิ์หลังบ้าน ***
+      callAPI({ action: 'getPayslipPeriods', empId: currentPayslipEmpId, requesterId: currentUser }, function(res) {
+          
+          // ถ้าระบบหลังบ้านยืนยันว่าเป็น Admin ค่อยแสดงช่องค้นหา
+          if (res.isAdmin) {
+              document.getElementById('ps_empNo_text').style.display = 'none';
+              document.getElementById('ps_empNo_input_group').style.display = 'flex';
+          }
+
           if (res.status === 'success' && res.data.length > 0) {
               select.innerHTML = '';
               res.data.forEach(p => { select.innerHTML += `<option value="${p}">งวด ${p}</option>`; });
@@ -2641,7 +2642,12 @@ async function detectFaceLoop() {
           } else {
               select.innerHTML = '<option value="" selected disabled>ไม่มีข้อมูล</option>';
               document.getElementById('ps_empNameDisplay').innerText = 'ไม่พบประวัติงวดเงินเดือน';
-              Swal.fire('แจ้งเตือน', 'ไม่พบประวัติสลิปเงินเดือนของรหัส: ' + currentPayslipEmpId, 'info');
+              
+              if (res.status === 'error') {
+                  Swal.fire('ปฏิเสธการเข้าถึง', res.message, 'error');
+              } else {
+                  Swal.fire('แจ้งเตือน', 'ไม่พบประวัติสลิปเงินเดือนของรหัส: ' + currentPayslipEmpId, 'info');
+              }
           }
       });
   }
@@ -2652,17 +2658,22 @@ async function detectFaceLoop() {
       if (!period) return;
       Swal.fire({ title: 'กำลังดึงข้อมูลสลิป...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       
-      callAPI({ action: 'getPayslip', empId: currentPayslipEmpId, period: period }, function(res) {
+      // *** เพิ่มพารามิเตอร์ requesterId: currentUser เพื่อส่งไปตรวจสิทธิ์หลังบ้าน ***
+      callAPI({ action: 'getPayslip', empId: currentPayslipEmpId, period: period, requesterId: currentUser }, function(res) {
           Swal.close();
           if (res.status === 'success') {
-              // ส่ง empName ที่ได้จาก API ไปให้ฟังก์ชัน Render
               renderPayslipUI(res.data, res.empName);
           } else {
-              Swal.fire('แจ้งเตือน', res.message, 'warning');
+              Swal.fire('ปฏิเสธการเข้าถึง', res.message, 'error');
+              
+              // ถ้าระบบปฏิเสธ (แอบดูของคนอื่น) ให้เด้งกลับไปดูรหัสของตัวเองอัตโนมัติ
+              if (currentPayslipEmpId !== currentUser) {
+                  currentPayslipEmpId = currentUser;
+                  loadPayslipPeriods();
+              }
           }
       });
   }
-
   // แก้ไข 4: ฟังก์ชัน renderPayslipUI
   function renderPayslipUI(data, empName) {
       // นำชื่อที่ได้จาก Database มาแสดง หรือถ้าหาไม่เจอให้แสดง "-"
