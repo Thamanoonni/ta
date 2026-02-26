@@ -2600,6 +2600,18 @@ async function detectFaceLoop() {
           loadPayslipPeriods();
       } else if (appId === 'IMPORT_PAYSLIP') {
           document.getElementById('adminImportPayslipSection').classList.remove('hidden');
+          
+          // --- เพิ่มโค้ดส่วนนี้: คำนวณและดึงงวดถัดไปอัตโนมัติ ---
+          document.getElementById('importPeriod').value = 'กำลังคำนวณ...';
+          callAPI({ action: 'getNextPayslipPeriod' }, function(res) {
+              if (res.status === 'success' && res.nextPeriod) {
+                  document.getElementById('importPeriod').value = res.nextPeriod;
+              } else {
+                  document.getElementById('importPeriod').value = '';
+              }
+          });
+          // ------------------------------------------------
+          
       } else {
           Swal.fire('Info', 'ระบบ ' + appId + ' กำลังพัฒนา', 'info'); showPortal(); 
       }
