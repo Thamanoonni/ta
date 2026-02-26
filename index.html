@@ -374,10 +374,11 @@
     
       <div id="userPayslipSection" class="hidden px-0 fade-in mt-4">
           <div id="payslipCard" class="card shadow-sm border-0 hidden mx-2 mb-3">
+              
               <div class="bg-primary text-white p-2 rounded-top d-flex justify-content-between align-items-start">
                   <div>
                       <h6 class="m-0 fw-bold mb-1">ใบแจ้งเงินเดือน</h6>
-                      <small class="companyNameText opacity-75" style="font-size: 0.75rem;">บริษัท...</small>
+                      <small id="ps_empNameDisplay" class="fw-bold text-warning" style="font-size: 0.85rem;">กำลังโหลด...</small>
                   </div>
                   <div class="text-end">
                       <select id="payslipPeriodSelect" class="form-select form-select-sm bg-white text-primary fw-bold border-0 shadow-sm mb-1 py-1" style="border-radius: 6px; cursor: pointer; min-width: 90px; font-size: 0.8rem;" onchange="loadPayslipData()">
@@ -388,8 +389,16 @@
               </div>
               
               <div class="p-2 bg-light border-bottom" style="font-size: 0.8rem;">
-                  <div class="d-flex justify-content-between text-muted mb-1">
-                      <span>รหัส: <strong class="text-dark" id="ps_empNo">-</strong></span>
+                  <div class="d-flex justify-content-between align-items-center text-muted mb-1">
+                      <div class="d-flex align-items-center">
+                          <span class="me-1">รหัส:</span>
+                          <strong class="text-dark" id="ps_empNo_text" style="display:none;">-</strong>
+                          
+                          <div id="ps_empNo_input_group" class="input-group input-group-sm shadow-sm" style="width: 140px; display:none;">
+                              <input type="text" id="ps_searchEmpInput" class="form-control text-center fw-bold text-primary" placeholder="ใส่รหัส">
+                              <button class="btn btn-primary" onclick="searchPayslip()"><i class="bi bi-search"></i></button>
+                          </div>
+                      </div>
                       <span>แผนก: <strong class="text-dark" id="ps_dept">-</strong></span>
                   </div>
                   <div class="d-flex justify-content-between text-muted">
@@ -930,64 +939,7 @@
       });
   }
 
-  function openApp(appId) {
-      var appConfig = systemConfigList.find(s => s.id === appId);
-      if (appConfig && (appConfig.type === 'External' || appId.startsWith('http'))) {
-          window.open(appId, '_blank'); 
-          return; 
-      }
-
-      var allSections = [
-          'portalSection', 
-          'taAppSection', 
-          'adminDashboardSection', 
-          'adminVerifySection', 
-          'adminUserSection',
-          'adminImportPayslipSection', 
-          'userPayslipSection'
-      ];
-      
-      allSections.forEach(function(id) {
-          var el = document.getElementById(id);
-          if (el) el.classList.add('hidden');
-      });
-
-      document.getElementById('btnBackToHome').classList.remove('hidden');
-
-      if (appId === 'TA') {
-          document.getElementById('taAppSection').classList.remove('hidden');
-          document.getElementById('historyDate').value = getLocalDateString();
-          loadHistory(); 
-      } 
-      else if (appId === 'DASHBOARD') {
-          document.getElementById('adminDashboardSection').classList.remove('hidden');
-          document.getElementById('statsDate').valueAsDate = new Date();
-          loadStats();
-      }
-      else if (appId === 'VERIFY') {
-          document.getElementById('adminVerifySection').classList.remove('hidden');
-          loadDeptForVerify();
-      }
-      else if (appId === 'USERS') {
-          document.getElementById('adminUserSection').classList.remove('hidden');
-          loadUserList();
-      }
-      else if (appId === 'PAYSLIP') {
-          // ส่วนของพนักงานดูสลิป
-          document.getElementById('userPayslipSection').classList.remove('hidden');
-          loadPayslipPeriods();
-      }
-      else if (appId === 'IMPORT_PAYSLIP') {
-          // ส่วนของแอดมินนำเข้าสลิป
-          document.getElementById('adminImportPayslipSection').classList.remove('hidden');
-      }
-
-      else {
-          Swal.fire('Info', 'ระบบ ' + appId + ' กำลังพัฒนา', 'info');
-          showPortal(); 
-      }
-  }
-
+  
   function showPortal() {
       if (watchId) navigator.geolocation.clearWatch(watchId);
       stopClock();
@@ -2604,6 +2556,227 @@ async function detectFaceLoop() {
           error: function(err) { Swal.fire('อ่านไฟล์ล้มเหลว', err.message, 'error'); }
       });
   }
+  // --- ตัวแปรสำหรับระบบ Payslip ---
+  var currentPayslipEmpId = null;
+
+  // แก้ไข 1: ฟังก์ชัน openApp (ตอนเข้าเมนูให้รีเซ็ตเป็นรหัสตัวเองเสมอ)
+  function openApp(appId) {
+      var appConfig = systemConfigList.find(s => s.id === appId);
+      if (appConfig && (appConfig.type === 'External' || appId.startsWith('http'))) {
+          window.open(appId, '_blank'); return; 
+      }
+
+      var allSections = ['portalSection', 'taAppSection', 'adminDashboardSection', 'adminVerifySection', 'adminUserSection', 'adminImportPayslipSection', 'userPayslipSection'];
+      allSections.forEach(function(id) { var el = document.getElementById(id); if (el) el.classList.add('hidden'); });
+      document.getElementById('btnBackToHome').classList.remove('hidden');
+
+      if (appId === 'TA') {
+          document.getElementById('taAppSection').classList.remove('hidden'); document.getElementById('historyDate').value = getLocalDateString(); loadHistory(); 
+      } else if (appId === 'DASHBOARD') {
+          document.getElementById('adminDashboardSection').classList.remove('hidden'); document.getElementById('statsDate').valueAsDate = new Date(); loadStats();
+      } else if (appId === 'VERIFY') {
+          document.getElementById('adminVerifySection').classList.remove('hidden'); loadDeptForVerify();
+      } else if (appId === 'USERS') {
+          document.getElementById('adminUserSection').classList.remove('hidden'); loadUserList();
+      } else if (appId === 'PAYSLIP') {
+          document.getElementById('userPayslipSection').classList.remove('hidden');
+          // รีเซ็ตค่าเป็นตัวเองเสมอเมื่อเข้าเมนู
+          currentPayslipEmpId = currentUser; 
+          if(document.getElementById('ps_searchEmpInput')) document.getElementById('ps_searchEmpInput').value = '';
+          loadPayslipPeriods();
+      } else if (appId === 'IMPORT_PAYSLIP') {
+          document.getElementById('adminImportPayslipSection').classList.remove('hidden');
+      } else {
+          Swal.fire('Info', 'ระบบ ' + appId + ' กำลังพัฒนา', 'info'); showPortal(); 
+      }
+  }
+
+  // เพิ่มใหม่: ฟังก์ชันสำหรับปุ่มแว่นขยาย
+  function searchPayslip() {
+      let inputVal = document.getElementById('ps_searchEmpInput').value.trim();
+      // ถ้าไม่กรอกอะไรเลยแล้วกดค้นหา ให้ดึงรหัสของตัวเอง (currentUser) มาแสดงแทน
+      if (!inputVal) {
+          inputVal = currentUser;
+          document.getElementById('ps_searchEmpInput').value = ''; // เคลียร์ช่องให้สวยงาม
+      }
+      currentPayslipEmpId = inputVal;
+      loadPayslipPeriods();
+  }
+
+  // แก้ไข 2: ฟังก์ชัน loadPayslipPeriods
+  function loadPayslipPeriods() {
+      if (!currentPayslipEmpId) currentPayslipEmpId = currentUser;
+
+      const select = document.getElementById('payslipPeriodSelect');
+      select.innerHTML = '<option value="" selected disabled>กำลังโหลด...</option>';
+      document.getElementById('payslipCard').classList.remove('hidden');
+      
+      // ล้างข้อมูลเก่า
+      document.getElementById('ps_empNameDisplay').innerText = 'กำลังโหลดข้อมูล...';
+      document.getElementById('ps_incomeList').innerHTML = '';
+      document.getElementById('ps_deductList').innerHTML = '';
+      document.getElementById('ps_totalIncome').innerText = '0';
+      document.getElementById('ps_totalDeduct').innerText = '0';
+      document.getElementById('ps_netPay').innerText = '0';
+      document.getElementById('ps_baseSalary').innerText = '-';
+
+      // เช็คว่าเป็น Admin ไหม (โดยดูว่ามีสิทธิ์เมนู USERS หรือ All ไหม)
+      const isAdmin = userAllowedApps.includes('All') || userAllowedApps.includes('USERS');
+      
+      if (isAdmin) {
+          document.getElementById('ps_empNo_text').style.display = 'none';
+          document.getElementById('ps_empNo_input_group').style.display = 'flex';
+      } else {
+          document.getElementById('ps_empNo_text').style.display = 'inline-block';
+          document.getElementById('ps_empNo_text').innerText = currentPayslipEmpId;
+          document.getElementById('ps_empNo_input_group').style.display = 'none';
+      }
+
+      callAPI({ action: 'getPayslipPeriods', empId: currentPayslipEmpId }, function(res) {
+          if (res.status === 'success' && res.data.length > 0) {
+              select.innerHTML = '';
+              res.data.forEach(p => { select.innerHTML += `<option value="${p}">งวด ${p}</option>`; });
+              select.selectedIndex = 0; 
+              loadPayslipData();
+          } else {
+              select.innerHTML = '<option value="" selected disabled>ไม่มีข้อมูล</option>';
+              document.getElementById('ps_empNameDisplay').innerText = 'ไม่พบประวัติงวดเงินเดือน';
+              Swal.fire('แจ้งเตือน', 'ไม่พบประวัติสลิปเงินเดือนของรหัส: ' + currentPayslipEmpId, 'info');
+          }
+      });
+  }
+
+  // แก้ไข 3: ฟังก์ชัน loadPayslipData
+  function loadPayslipData() {
+      const period = document.getElementById('payslipPeriodSelect').value;
+      if (!period) return;
+      Swal.fire({ title: 'กำลังดึงข้อมูลสลิป...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      
+      callAPI({ action: 'getPayslip', empId: currentPayslipEmpId, period: period }, function(res) {
+          Swal.close();
+          if (res.status === 'success') {
+              // ส่ง empName ที่ได้จาก API ไปให้ฟังก์ชัน Render
+              renderPayslipUI(res.data, res.empName);
+          } else {
+              Swal.fire('แจ้งเตือน', res.message, 'warning');
+          }
+      });
+  }
+
+  // แก้ไข 4: ฟังก์ชัน renderPayslipUI
+  function renderPayslipUI(data, empName) {
+      // นำชื่อที่ได้จาก Database มาแสดง หรือถ้าหาไม่เจอให้แสดง "-"
+      document.getElementById('ps_empNameDisplay').innerText = empName || '-';
+
+      document.getElementById('ps_date').innerText = 'จ่าย: ' + (data['วันที่จ่าย'] || '-');
+      document.getElementById('ps_dept').innerText = data['DEPT_CODE'] || '-';
+      document.getElementById('ps_bank').innerText = data['ธนาคาร'] || '-';
+      document.getElementById('ps_accNo').innerText = data['เลขบัญชีธนาคาร'] || '';
+      
+      const formatMoney = (num) => Math.round(parseFloat(num || 0)).toLocaleString('th-TH');
+      document.getElementById('ps_baseSalary').innerText = formatMoney(data['เงินเดือน']);
+
+      let incomeHtml = '';
+      let totalIncome = 0;
+      incomeKeys.forEach(key => {
+          let val = parseFloat(data[key] || 0);
+          if (val > 0) { 
+              let displayLabel = key; 
+              if (key === 'เงินเดือนรับ') displayLabel = `เงินเดือน (${data['วันทำงาน'] || 0})`;
+              else if (key === 'ot1 amt') displayLabel = `OT 1 (${parseFloat(data['OT1 (ช.ม.)'] || 0).toFixed(1)})`;
+              else if (key === 'ot15 amt') displayLabel = `OT 1.5 (${parseFloat(data['OT1.5 (ช.ม.)'] || 0).toFixed(1)})`;
+              else if (key === 'ot2 amt') displayLabel = `OT 2 (${parseFloat(data['OT2 (ช.ม.)'] || 0).toFixed(1)})`;
+              else if (key === 'ot3 amt') displayLabel = `OT 3 (${parseFloat(data['OT3 (ช.ม.)'] || 0).toFixed(1)})`;
+
+              incomeHtml += `<div class="d-flex justify-content-between text-secondary mb-1">
+                                <span class="text-truncate pe-1">${displayLabel}</span> 
+                                <span class="text-dark">${formatMoney(val)}</span>
+                             </div>`;
+              totalIncome += val;
+          }
+      });
+      document.getElementById('ps_incomeList').innerHTML = incomeHtml || '<div class="text-muted">-</div>';
+      document.getElementById('ps_totalIncome').innerText = formatMoney(totalIncome);
+
+      let deductHtml = '';
+      let totalDeduct = 0;
+      deductKeys.forEach(key => {
+          let val = parseFloat(data[key] || 0);
+          if (val > 0) { 
+              deductHtml += `<div class="d-flex justify-content-between text-secondary mb-1">
+                                <span class="text-truncate pe-1">${key}</span> 
+                                <span class="text-dark">${formatMoney(val)}</span>
+                             </div>`;
+              totalDeduct += val;
+          }
+      });
+      document.getElementById('ps_deductList').innerHTML = deductHtml || '<div class="text-muted">-</div>';
+      document.getElementById('ps_totalDeduct').innerText = formatMoney(totalDeduct);
+
+      const netPay = totalIncome - totalDeduct;
+      document.getElementById('ps_netPay').innerText = formatMoney(netPay);
+      document.getElementById('ps_accIncome').innerText = formatMoney(data['รายได้สะสมต่อปี']);
+      document.getElementById('ps_accTax').innerText = formatMoney(data['ภาษีสะสมต่อปี']);
+      document.getElementById('ps_accSSO').innerText = formatMoney(data['ประกันสังคมต่อปี']);
+  }
+  /*
+  function openApp(appId) {
+      var appConfig = systemConfigList.find(s => s.id === appId);
+      if (appConfig && (appConfig.type === 'External' || appId.startsWith('http'))) {
+          window.open(appId, '_blank'); 
+          return; 
+      }
+
+      var allSections = [
+          'portalSection', 
+          'taAppSection', 
+          'adminDashboardSection', 
+          'adminVerifySection', 
+          'adminUserSection',
+          'adminImportPayslipSection', 
+          'userPayslipSection'
+      ];
+      
+      allSections.forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el) el.classList.add('hidden');
+      });
+
+      document.getElementById('btnBackToHome').classList.remove('hidden');
+
+      if (appId === 'TA') {
+          document.getElementById('taAppSection').classList.remove('hidden');
+          document.getElementById('historyDate').value = getLocalDateString();
+          loadHistory(); 
+      } 
+      else if (appId === 'DASHBOARD') {
+          document.getElementById('adminDashboardSection').classList.remove('hidden');
+          document.getElementById('statsDate').valueAsDate = new Date();
+          loadStats();
+      }
+      else if (appId === 'VERIFY') {
+          document.getElementById('adminVerifySection').classList.remove('hidden');
+          loadDeptForVerify();
+      }
+      else if (appId === 'USERS') {
+          document.getElementById('adminUserSection').classList.remove('hidden');
+          loadUserList();
+      }
+      else if (appId === 'PAYSLIP') {
+          // ส่วนของพนักงานดูสลิป
+          document.getElementById('userPayslipSection').classList.remove('hidden');
+          loadPayslipPeriods();
+      }
+      else if (appId === 'IMPORT_PAYSLIP') {
+          // ส่วนของแอดมินนำเข้าสลิป
+          document.getElementById('adminImportPayslipSection').classList.remove('hidden');
+      }
+
+      else {
+          Swal.fire('Info', 'ระบบ ' + appId + ' กำลังพัฒนา', 'info');
+          showPortal(); 
+      }
+  }
 
   // --- 4. ฝั่ง User: ดึงงวด และข้อมูลสลิป ---
   function loadPayslipPeriods() {
@@ -2655,7 +2828,6 @@ async function detectFaceLoop() {
       });
   }
 
-  // --- 5. เรนเดอร์หน้าตา Payslip (โชว์เฉพาะค่า > 0) ---
   // --- 5. เรนเดอร์หน้าตา Payslip (โชว์เฉพาะค่า > 0) ---
   function renderPayslipUI(data) {
       document.getElementById('ps_date').innerText = 'จ่าย: ' + (data['วันที่จ่าย'] || '-');
@@ -2731,7 +2903,7 @@ async function detectFaceLoop() {
       document.getElementById('ps_accTax').innerText = formatMoney(data['ภาษีสะสมต่อปี']);
       document.getElementById('ps_accSSO').innerText = formatMoney(data['ประกันสังคมต่อปี']);
   }
-
+*/
 </script>
 
 </body>
