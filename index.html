@@ -374,10 +374,25 @@
     
       <div id="userPayslipSection" class="hidden px-0 fade-in mt-4">
           <div id="payslipCard" class="card shadow-sm border-0 hidden mx-2 mb-3">
-              
+              <!--
               <div class="bg-primary text-white p-2 rounded-top d-flex justify-content-between align-items-start">
                   <div>
                       <h6 class="m-0 fw-bold mb-1">ใบแจ้งเงินเดือน</h6>
+                      <small id="ps_empNameDisplay" class="fw-bold text-warning" style="font-size: 0.85rem;">กำลังโหลด...</small>
+                  </div>
+                  <div class="text-end">
+                      <select id="payslipPeriodSelect" class="form-select form-select-sm bg-white text-primary fw-bold border-0 shadow-sm mb-1 py-1" style="border-radius: 6px; cursor: pointer; min-width: 90px; font-size: 0.8rem;" onchange="loadPayslipData()">
+                          <option value="" selected disabled>โหลดงวด...</option>
+                      </select>
+                      <small id="ps_date" class="opacity-75 d-block mt-1" style="font-size: 0.7rem;">จ่าย: -</small>
+                  </div>
+              </div> -->
+              <div class="bg-primary text-white p-2 rounded-top d-flex justify-content-between align-items-start">
+                  <div>
+                      <div class="d-flex align-items-center mb-1">
+                          <h6 class="m-0 fw-bold me-2">ใบแจ้งเงินเดือน</h6>
+                          <img id="ps_empProfileImg" src="" class="rounded-circle border border-white" style="width: 26px; height: 26px; object-fit: cover; display: none;">
+                      </div>
                       <small id="ps_empNameDisplay" class="fw-bold text-warning" style="font-size: 0.85rem;">กำลังโหลด...</small>
                   </div>
                   <div class="text-end">
