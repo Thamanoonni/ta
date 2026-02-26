@@ -2582,7 +2582,12 @@ async function detectFaceLoop() {
           document.getElementById('userPayslipSection').classList.remove('hidden');
           // รีเซ็ตค่าเป็นตัวเองเสมอเมื่อเข้าเมนู
           currentPayslipEmpId = currentUser; 
-          if(document.getElementById('ps_searchEmpInput')) document.getElementById('ps_searchEmpInput').value = '';
+          
+          // *** แก้ไข: ให้นำรหัสที่ Login (currentUser) มาแสดงในช่อง Input เลย ***
+          if(document.getElementById('ps_searchEmpInput')) {
+              document.getElementById('ps_searchEmpInput').value = currentUser;
+          }
+          
           loadPayslipPeriods();
       } else if (appId === 'IMPORT_PAYSLIP') {
           document.getElementById('adminImportPayslipSection').classList.remove('hidden');
@@ -2632,6 +2637,9 @@ async function detectFaceLoop() {
           if (res.isAdmin) {
               document.getElementById('ps_empNo_text').style.display = 'none';
               document.getElementById('ps_empNo_input_group').style.display = 'flex';
+              
+              // *** เพิ่มบรรทัดนี้: ให้แสดงรหัสที่กำลังดูอยู่ลงในช่อง Input ด้วย ***
+              document.getElementById('ps_searchEmpInput').value = currentPayslipEmpId;
           }
 
           if (res.status === 'success' && res.data.length > 0) {
