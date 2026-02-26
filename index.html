@@ -402,7 +402,7 @@
                       <small id="ps_date" class="opacity-75 d-block mt-1" style="font-size: 0.7rem;">จ่าย: -</small>
                   </div>
               </div>
-              
+
               <div class="p-2 bg-light border-bottom" style="font-size: 0.8rem;">
                   <div class="d-flex justify-content-between align-items-center text-muted mb-1">
                       <div class="d-flex align-items-center">
@@ -2675,21 +2675,20 @@ async function detectFaceLoop() {
       });
   }
 
-  // แก้ไข 3: ฟังก์ชัน loadPayslipData
+  // แก้ไข: ฟังก์ชัน loadPayslipData (เพื่อรับค่ารูปภาพ)
   function loadPayslipData() {
       const period = document.getElementById('payslipPeriodSelect').value;
       if (!period) return;
       Swal.fire({ title: 'กำลังดึงข้อมูลสลิป...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       
-      // *** เพิ่มพารามิเตอร์ requesterId: currentUser เพื่อส่งไปตรวจสิทธิ์หลังบ้าน ***
       callAPI({ action: 'getPayslip', empId: currentPayslipEmpId, period: period, requesterId: currentUser }, function(res) {
           Swal.close();
           if (res.status === 'success') {
-              renderPayslipUI(res.data, res.empName);
+              // *** เพิ่มการส่ง res.empPhotoId ไปให้ฟังก์ชันเรนเดอร์ ***
+              renderPayslipUI(res.data, res.empName, res.empPhotoId);
           } else {
               Swal.fire('ปฏิเสธการเข้าถึง', res.message, 'error');
               
-              // ถ้าระบบปฏิเสธ (แอบดูของคนอื่น) ให้เด้งกลับไปดูรหัสของตัวเองอัตโนมัติ
               if (currentPayslipEmpId !== currentUser) {
                   currentPayslipEmpId = currentUser;
                   loadPayslipPeriods();
@@ -2697,10 +2696,21 @@ async function detectFaceLoop() {
           }
       });
   }
-  // แก้ไข 4: ฟังก์ชัน renderPayslipUI
-  function renderPayslipUI(data, empName) {
-      // นำชื่อที่ได้จาก Database มาแสดง หรือถ้าหาไม่เจอให้แสดง "-"
+
+  // แก้ไข: ฟังก์ชัน renderPayslipUI (รับค่า empPhotoId และเช็คเงื่อนไขก่อนแสดง)
+  function renderPayslipUI(data, empName, empPhotoId) {
       document.getElementById('ps_empNameDisplay').innerText = empName || '-';
+
+      // *** จัดการรูปโปรไฟล์ (แสดงเฉพาะเมื่อดูสลิปของคนอื่น และ มีรหัสรูปภาพ) ***
+      const imgEl = document.getElementById('ps_empProfileImg');
+      if (String(currentPayslipEmpId) !== String(currentUser) && empPhotoId) {
+          // ดึงรูปจาก Google Drive
+          imgEl.src = "https://drive.google.com/thumbnail?id=" + empPhotoId + "&sz=s100";
+          imgEl.style.display = 'block';
+      } else {
+          // ถ้าดูของตัวเอง ให้ซ่อนรูป
+          imgEl.style.display = 'none';
+      }
 
       document.getElementById('ps_date').innerText = 'จ่าย: ' + (data['วันที่จ่าย'] || '-');
       document.getElementById('ps_dept').innerText = data['DEPT_CODE'] || '-';
