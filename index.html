@@ -401,7 +401,8 @@
                           <strong class="text-dark" id="ps_empNo_text" style="display:none;">-</strong>
                           
                           <div id="ps_empNo_input_group" class="input-group input-group-sm shadow-sm" style="width: 140px; display:none;">
-                              <input type="text" id="ps_searchEmpInput" class="form-control text-center fw-bold text-primary" placeholder="ใส่รหัส">
+                              <!--<input type="text" id="ps_searchEmpInput" class="form-control text-center fw-bold text-primary" placeholder="ใส่รหัส">-->
+                              <input type="text" inputmode="numeric" pattern="[0-9]*" id="ps_searchEmpInput" class="form-control text-center fw-bold text-primary" placeholder="ใส่รหัส">
                               <button class="btn btn-primary" onclick="searchPayslip()"><i class="bi bi-search"></i></button>
                           </div>
                       </div>
