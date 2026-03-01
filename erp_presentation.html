@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP Modernization Project</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0056b3;
+            --secondary: #f8f9fa;
+            --accent: #ff6b6b;
+            --text-dark: #333;
+            --text-light: #fff;
+        }
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            font-family: 'Prompt', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            overflow: hidden;
+            color: var(--text-dark);
+        }
+        .slide-container {
+            position: relative; width: 100vw; height: 100vh;
+        }
+        .slide {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; visibility: hidden; transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            transform: translateY(20px);
+            padding: 40px; box-sizing: border-box;
+        }
+        .slide.active {
+            opacity: 1; visibility: visible; transform: translateY(0);
+        }
+        .content-box {
+            background: rgba(255, 255, 255, 0.95); padding: 50px; border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 80%; max-width: 1000px;
+        }
+        h1 { color: var(--primary); font-size: 2.5em; margin-bottom: 20px; text-align: center; }
+        h2 { color: var(--primary); font-size: 2em; border-bottom: 3px solid var(--primary); padding-bottom: 10px; margin-bottom: 20px; }
+        p, li { font-size: 1.2em; line-height: 1.6; margin-bottom: 15px; }
+        ul { padding-left: 20px; }
+        .highlight { color: var(--accent); font-weight: 600; }
+        
+        /* Navigation Controls */
+        .controls {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 20px; align-items: center; z-index: 100;
+        }
+        button {
+            background: var(--primary); color: white; border: none; padding: 10px 25px;
+            font-size: 1.2em; border-radius: 25px; cursor: pointer; transition: background 0.3s;
+            font-family: 'Prompt', sans-serif;
+        }
+        button:hover { background: #003d82; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .progress { font-size: 1.2em; font-weight: 600; color: #555; }
+        
+        /* Layout Utilities */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .box { background: #f1f3f5; padding: 20px; border-radius: 10px; border-left: 5px solid var(--primary); }
+    </style>
+</head>
+<body>
+
+<div class="slide-container" id="slider">
+    <div class="slide active">
+        <div class="content-box" style="text-align: center;">
+            <h1 style="font-size: 3em;">🚀 โครงการยกระดับระบบ ERP องค์กร</h1>
+            <h2 style="border: none; color: #555;">(ERP Modernization Project)</h2>
+            <p>ก้าวสู่เทคโนโลยี Web Application เพื่อรากฐานธุรกิจที่มั่นคงและยั่งยืน</p>
+        </div>
+    </div>
+
+    <div class="slide">
+        <div class="content-box">
+            <h2>1. ทำไมเราต้องเปลี่ยน (Why Change?)</h2>
+            <ul>
+                <li>⚠️ <b>ความเสี่ยงด้านเทคโนโลยี (Technology Obsolescence):</b> ระบบ Delphi 5 ขาดผู้สืบทอดและดูแลรักษาในระยะยาว</li>
+                <li>⏳ <b>ปัญหาคอขวด (Performance Issues):</b> อาการรอค้าง (เช่น รอ 15 นาที) ลดทอนประสิทธิภาพพนักงาน</li>
+                <li>📱 <b>ข้อจำกัดด้านการเข้าถึง (Accessibility):</b> ถูกจำกัดอยู่แค่หน้าจอ PC บนโต๊ะทำงานเท่านั้น</li>
+                <li>🔗 <b>การต่อยอดธุรกิจ (Business Agility):</b> เชื่อมต่อกับเทคโนโลยีใหม่ๆ (Line, Dashboard) ได้ยาก</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="slide">
+        <div class="content-box">
+            <h2>2. การปรับเปลี่ยนเทคโนโลยีและข้อดี</h2>
+            <div class="grid-2">
+                <div class="box">
+                    <h3 style="color:#d9534f; margin-top:0;">🔴 ระบบเดิม</h3>
+                    <p>Delphi 5 (Desktop App)<br>+ Interbase DB (11 GB)</p>
+                </div>
+                <div class="box" style="border-left-color: #28a745;">
+                    <h3 style="color:#28a745; margin-top:0;">🟢 ระบบใหม่</h3>
+                    <p>Web Browser (HTML/JS)<br>+ Golang Backend<br>+ PostgreSQL DB</p>
+                </div>
+            </div>
+            <ul style="margin-top: 20px;">
+                <li><b>เข้าถึงง่าย:</b> ทำงานได้ทุกที่ รองรับ Tablet ในสายการผลิต</li>
+                <li><b>รวดเร็ว & เสถียร:</b> Golang ประมวลผลไว หมดปัญหาคิวเซฟข้อมูลชนกัน</li>
+                <li><b>ประหยัดต้นทุน:</b> PostgreSQL ฟรี 100% ไม่มีค่าลิขสิทธิ์ระดับองค์กร</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="slide">
+        <div class="content-box">
+            <h2>3. แผนงานการเปลี่ยนผ่าน (Migration Strategy)</h2>
+            <p>เราใช้สถาปัตยกรรม <span class="highlight">Strangler Fig Pattern</span> (ทยอยเปลี่ยน ไม่ปิดระบบกะทันหัน)</p>
+            <ul>
+                <li><b>Phase 1:</b> วางระบบ Security & Login บน Web + PostgreSQL</li>
+                <li><b>Phase 2:</b> เชื่อมระบบ Web กลับไปอ่านข้อมูลตาราง Interbase เดิม</li>
+                <li><b>Phase 3:</b> ทยอยย้าย User มาทำงานบนเว็บทีละโมดูล (เริ่มจากระบบจัดซื้อ/PR)</li>
+                <li><b>Phase 4:</b> ปลดระวาง Delphi อย่างสมบูรณ์ แล้วย้ายข้อมูลทั้งหมดสู่ PostgreSQL</li>
+            </ul>
+            <p style="text-align: center; font-weight: bold; color: var(--primary);">✅ ธุรกิจไม่สะดุด (Zero Downtime) ข้อมูลตรงกันเสมอ</p>
+        </div>
+    </div>
+
+    <div class="slide">
+        <div class="content-box">
+            <h2>4. ความท้าทายและการรับมือ</h2>
+            <ul>
+                <li><b>ภาระงานพัฒนาระบบคู่ขนาน:</b> ทีมงานต้องดูแลระบบเดิมและสร้างระบบใหม่ไปพร้อมๆ กัน (Dual Maintenance)</li>
+                <li><b>การเชื่อมโยงข้อมูลข้าม Database:</b> ต้องใช้ Golang เป็นสะพานเชื่อมระหว่าง Interbase และ Postgres อย่างรอบคอบ</li>
+                <li><b>การจัดการข้อผิดพลาด (Transaction Handling):</b> วางระบบชดเชยข้อมูลหากเกิด Error ระหว่างการบันทึกข้ามฐานข้อมูล</li>
+            </ul>
+        </div>
+    </div>
+    <!--
+    <div class="slide">
+        <div class="content-box">
+            <h2>5. ระยะเวลาดำเนินงาน (12 - 18 เดือน)</h2>
+            <div style="background: #e9ecef; padding: 15px; border-radius: 8px;">
+                <p>🗓️ <b>เดือน 1-3:</b> วางรากฐาน Security & Master Data</p>
+                <p>🗓️ <b>เดือน 4-8:</b> พัฒนาระบบจัดซื้อ (Purchasing) และคลังสินค้า</p>
+                <p>🗓️ <b>เดือน 9-13:</b> พัฒนาระบบผลิต, ขาย และจัดส่ง</p>
+                <p>🗓️ <b>เดือน 14-17:</b> พัฒนาระบบบัญชี และรันคู่ขนาน (Parallel Run)</p>
+                <p>🗓️ <b>เดือน 18:</b> ถ่ายโอนข้อมูลสู่ PostgreSQL สมบูรณ์ และปิดระบบเก่า</p>
+            </div>
+        </div>
+    </div>
+-->
+    <div class="slide">
+        <div class="content-box">
+            <h2>5. ระยะเวลาดำเนินงาน (18 - 24 เดือน)</h2>
+            <div style="background: #e9ecef; padding: 20px; border-radius: 8px; font-size: 1.1em;">
+                <p>🗓️ <b>เดือน 1 - 4:</b> วางรากฐานระบบ Security, ฐานข้อมูล PostgreSQL และ Master Data</p>
+                <p>🗓️ <b>เดือน 5 - 10:</b> พัฒนาระบบจัดซื้อ (Purchasing) และระบบจัดการคลังสินค้า (Inventory)</p>
+                <p>🗓️ <b>เดือน 11 - 16:</b> พัฒนาระบบการผลิต (Production), การขาย (Sales) และการจัดส่ง</p>
+                <p>🗓️ <b>เดือน 17 - 21:</b> พัฒนาระบบบัญชี (AR, AP, GL) ซึ่งมีความซับซ้อนสูงสุด</p>
+                <p style="color: var(--primary); font-weight: bold; border-top: 2px dashed #ccc; padding-top: 15px; margin-top: 15px;">
+                    🗓️ เดือน 22 - 24: รันระบบคู่ขนาน (Parallel Run) เพื่อตรวจสอบความถูกต้องของข้อมูลบัญชี และถ่ายโอนระบบ 100%
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide">
+        <div class="content-box">
+            <h2>6. งบประมาณและทรัพยากร (Budget & Resources)</h2>
+            <div class="grid-2">
+                <div>
+                    <h3>💰 ค่าลิขสิทธิ์ซอฟต์แวร์: <span style="color:#28a745;">0 บาท</span></h3>
+                    <p>PostgreSQL, Golang และ Web Stack เป็น Open Source ฟรีทั้งหมด</p>
+                    <h3>🖥️ โครงสร้างพื้นฐาน</h3>
+                    <p>Production & Test Server (On-Premise หรือ Cloud)</p>
+                </div>
+                <div>
+                    <h3>👥 ทรัพยากรบุคคล</h3>
+                    <p>ทีมพัฒนา (Golang, JS) และ Key Users สำหรับทดสอบระบบ (UAT)</p>
+                    <h3>📚 การจัดการความเปลี่ยนแปลง</h3>
+                    <p>คู่มือและการจัดฝึกอบรมพนักงาน (Training)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide">
+        <div class="content-box" style="text-align: center;">
+            <h2>บทสรุปผู้บริหาร (Executive Summary)</h2>
+            <p style="font-size: 1.5em; font-style: italic; margin: 40px 0;">
+                "โครงการนี้ไม่ใช่การซื้อระบบราคาแพง<br>แต่คือการนำรากฐานเดิมที่แข็งแกร่ง มาสวมชุดใหม่ให้ทันสมัย<br><span class="highlight">ด้วยเทคโนโลยีที่ทรงพลัง ปลอดภัย และไม่มีค่าลิขสิทธิ์ผูกมัด</span>"
+            </p>
+        </div>
+    </div>
+
+</div>
+
+<div class="controls">
+    <button id="prevBtn" onclick="changeSlide(-1)">◀ ย้อนกลับ</button>
+    <span class="progress" id="pageIndicator">1 / 8</span>
+    <button id="nextBtn" onclick="changeSlide(1)">ถัดไป ▶</button>
+</div>
+
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+
+    function updateControls() {
+        document.getElementById('prevBtn').disabled = currentSlide === 0;
+        document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+        document.getElementById('pageIndicator').innerText = `${currentSlide + 1} / ${totalSlides}`;
+    }
+
+    function changeSlide(direction) {
+        slides[currentSlide].classList.remove('active');
+        currentSlide += direction;
+        
+        // Boundaries
+        if (currentSlide < 0) currentSlide = 0;
+        if (currentSlide >= totalSlides) currentSlide = totalSlides - 1;
+        
+        slides[currentSlide].classList.add('active');
+        updateControls();
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === ' ') {
+            if(currentSlide < totalSlides - 1) changeSlide(1);
+        } else if (e.key === 'ArrowLeft') {
+            if(currentSlide > 0) changeSlide(-1);
+        }
+    });
+
+    updateControls();
+</script>
+
+</body>
+</html>
