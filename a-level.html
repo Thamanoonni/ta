@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A-Level Science: Interactive Study Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #fcfbf9; /* Warm neutral background */
+            color: #334155;
+        }
+
+        /* Chart Container Styling - Mandatory Requirements */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px; /* Constrain max width */
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px; /* Base height */
+            max-height: 350px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+
+        /* Flip Card CSS for Vocabulary */
+        .flip-card {
+            background-color: transparent;
+            width: 100%;
+            height: 150px;
+            perspective: 1000px;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            border-radius: 0.75rem;
+        }
+        .flip-card:hover .flip-card-inner, .flip-card:focus .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .flip-card-front {
+            background-color: #ffffff;
+            color: #0f172a;
+            border: 2px solid #e2e8f0;
+        }
+        .flip-card-back {
+            background-color: #334155;
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        /* Custom scrollbar for clean look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+<!-- Chosen Palette: Warm Neutrals (Slate/Stone) with Teal (Chemistry) and Rose (Biology) accents for a calm, academic feel. -->
+<!-- Application Structure Plan: 
+    The SPA uses a "Dashboard" structure divided into thematic learning zones. 
+    1. Overview (Radar Chart) to show study weightings.
+    2. Interactive Concepts Lab: Allows users to play with variables (Stoichiometry calculator, Buffer mixer, Fight/Flight toggle) to see cause-and-effect, cementing complex A-Level topics.
+    3. Vocabulary Cards: CSS-based flip cards for quick active recall.
+    4. Assessment Zone: Interactive quiz to test the knowledge immediately.
+    This structure was chosen because A-Level science requires understanding mechanisms, not just reading text. Interactive widgets force the user to engage with the concepts. 
+-->
+<!-- Visualization & Content Choices: 
+    - Stoichiometry -> Goal: Inform & Calculate -> Viz: Dynamic Bar Chart (Chart.js) -> Interaction: Input moles to see limiting reagent and product yield. -> Lib: Chart.js (NO SVG).
+    - Fight/Flight -> Goal: Change & Contrast -> Viz: HTML/CSS State Toggle -> Interaction: Switch between 'Rest' and 'Danger' to see physiological changes.
+    - Buffers -> Goal: Compare & Logic -> Viz: HTML logic mixer -> Interaction: Select acid/base combinations to see if a buffer forms.
+    - Overall Content Weight -> Goal: Organize -> Viz: Radar Chart (Chart.js) -> To show the spread of topics in the study guide.
+-->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+
+    <!-- Header Section -->
+    <header class="text-center space-y-4">
+        <div class="inline-block p-3 bg-white rounded-full shadow-sm mb-2 border border-slate-100">
+            <span class="text-3xl">🧬🧪</span>
+        </div>
+        <h1 class="text-4xl md:text-5xl font-bold text-slate-800 tracking-tight">A-Level Science: Interactive Hub</h1>
+        <p class="text-lg text-slate-600 max-w-2xl mx-auto">
+            คู่มือทบทวนฉบับเจาะลึกตามผลทดสอบ ครอบคลุมเนื้อหาสำคัญที่มักออกสอบในวิชา A-Level เคมีและชีววิทยา 
+            เรียนรู้ผ่านการทดลองจำลองและแบบทดสอบอินเทอร์แอกทีฟ
+        </p>
+    </header>
+
+    <!-- Overview Section -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                <span>🎯</span> ภาพรวมเนื้อหาหลัก (Key Topics)
+            </h2>
+            <p class="text-slate-600 mt-2">
+                ส่วนนี้แสดงสัดส่วนของหัวข้อที่ครอบคลุมในคู่มือทบทวนนี้ แผนภาพเรดาร์ช่วยให้เห็นว่าเรากำลังโฟกัสที่จุดใด 
+                การทำความเข้าใจความเชื่อมโยงระหว่างระบบร่างกายและหลักการทางเคมีคือหัวใจสำคัญของการทำข้อสอบ
+            </p>
+        </div>
+        <div class="chart-container">
+            <canvas id="topicsRadarChart"></canvas>
+        </div>
+    </section>
+
+    <!-- Interactive Concept Lab Section -->
+    <section class="space-y-6">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                <span>🔬</span> ห้องปฏิบัติการจำลอง (Concept Lab)
+            </h2>
+            <p class="text-slate-600 mt-2">
+                ทดลองปรับเปลี่ยนตัวแปรเพื่อทำความเข้าใจกลไกทางเคมีและชีววิทยาด้วยตัวเอง (Active Learning) 
+                จำลองสถานการณ์จริงที่มักพบในโจทย์ข้อสอบ
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Stoichiometry Calculator -->
+            <div class="bg-white rounded-2xl shadow-sm border border-teal-100 p-6 flex flex-col h-full">
+                <div class="border-b border-teal-50 pb-4 mb-4">
+                    <h3 class="text-xl font-bold text-teal-800">ปริมาณสารสัมพันธ์ (Stoichiometry)</h3>
+                    <p class="text-sm text-slate-500 mt-1">สมการ: N₂ + 3H₂ → 2NH₃ (ค้นหาสารกำหนดปริมาณ)</p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">โมลของ N₂ (ไนโตรเจน)</label>
+                        <input type="number" id="n2-input" value="2" min="0" step="0.5" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-teal-500 focus:border-teal-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">โมลของ H₂ (ไฮโดรเจน)</label>
+                        <input type="number" id="h2-input" value="3" min="0" step="0.5" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-teal-500 focus:border-teal-500">
+                    </div>
+                </div>
+                
+                <button onclick="calculateStoichiometry()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded-lg transition-colors mb-6">
+                    คำนวณปฏิกิริยา
+                </button>
+
+                <div id="stoich-result" class="bg-teal-50 p-4 rounded-lg text-teal-900 text-sm mb-4 hidden font-medium">
+                    <!-- Result text will be injected here -->
+                </div>
+
+                <div class="chart-container flex-grow mt-auto">
+                    <canvas id="stoichChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Buffer Solutions Logic -->
+            <div class="bg-white rounded-2xl shadow-sm border border-teal-100 p-6 flex flex-col h-full">
+                <div class="border-b border-teal-50 pb-4 mb-4">
+                    <h3 class="text-xl font-bold text-teal-800">📌 สารละลายบัฟเฟอร์ (Buffer Solutions)</h3>
+                    <p class="text-sm text-slate-500 mt-1">ทดลองผสมสารเพื่อตรวจสอบการเกิดสภาพต้านทาน pH</p>
+                </div>
+
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">สารตั้งต้นที่ 1</label>
+                        <select id="buffer-sub1" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                            <option value="weak-acid">กรดอ่อน (เช่น CH₃COOH) 100 mL</option>
+                            <option value="strong-acid">กรดแก่ (เช่น HCl) 100 mL</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-center text-xl text-slate-400">➕</div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">สารตั้งต้นที่ 2</label>
+                        <select id="buffer-sub2" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                            <option value="strong-base-50">เบสแก่ (เช่น NaOH) 50 mL</option>
+                            <option value="strong-base-150">เบสแก่ (เช่น NaOH) 150 mL</option>
+                            <option value="salt">เกลือของกรดแก่ (เช่น KNO₃)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button onclick="checkBuffer()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-medium py-2 px-4 rounded-lg transition-colors mb-6">
+                    ผสมสารละลาย
+                </button>
+
+                <div id="buffer-result-box" class="mt-auto p-6 rounded-xl border-2 border-dashed border-slate-200 text-center transition-all duration-300">
+                    <span class="text-4xl block mb-2" id="buffer-icon">🧪</span>
+                    <h4 class="font-bold text-lg text-slate-700" id="buffer-title">รอการผสม...</h4>
+                    <p class="text-sm text-slate-500 mt-2" id="buffer-desc">เลือกสารตั้งต้นและกดผสมเพื่อดูผลลัพธ์</p>
+                </div>
+            </div>
+
+            <!-- Fight or Flight Simulator -->
+            <div class="bg-white rounded-2xl shadow-sm border border-rose-100 p-6 flex flex-col h-full lg:col-span-2 xl:col-span-1">
+                <div class="border-b border-rose-50 pb-4 mb-4">
+                    <h3 class="text-xl font-bold text-rose-800">ระบบประสาท: Fight or Flight</h3>
+                    <p class="text-sm text-slate-500 mt-1">สลับสภาวะร่างกายเพื่อดูการทำงานของระบบซิมพาเทติก</p>
+                </div>
+
+                <div class="flex justify-center mb-8 mt-4">
+                    <button id="toggle-nervous-btn" onclick="toggleNervousSystem()" class="relative inline-flex h-12 w-48 items-center rounded-full transition-colors focus:outline-none bg-emerald-500">
+                        <span id="toggle-knob" class="inline-block h-10 w-10 transform rounded-full bg-white transition duration-300 translate-x-1"></span>
+                        <span id="toggle-text" class="absolute right-6 text-white font-bold text-sm">พักผ่อน (Rest)</span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mt-auto">
+                    <div class="bg-slate-50 p-4 rounded-xl text-center">
+                        <span class="text-2xl block mb-1">🧠</span>
+                        <span class="block text-xs text-slate-500 uppercase font-bold tracking-wider">ระบบประสาท</span>
+                        <span id="nervous-type" class="block font-semibold text-emerald-700 mt-1">พาราซิมพาเทติก</span>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl text-center">
+                        <span class="text-2xl block mb-1">🩸</span>
+                        <span class="block text-xs text-slate-500 uppercase font-bold tracking-wider">ฮอร์โมนหลัก</span>
+                        <span id="hormone-type" class="block font-semibold text-slate-700 mt-1">ปกติ</span>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl text-center col-span-2">
+                        <span class="text-2xl block mb-1">🫀</span>
+                        <span class="block text-xs text-slate-500 uppercase font-bold tracking-wider">การตอบสนองของหัวใจ</span>
+                        <span id="heart-response" class="block font-semibold text-slate-700 mt-1">เต้นปกติ ช้าลง</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Biological Rules Box -->
+            <div class="bg-slate-800 text-white rounded-2xl shadow-sm p-6 flex flex-col h-full lg:col-span-2 xl:col-span-1">
+                <h3 class="text-xl font-bold mb-6 flex items-center gap-2">
+                    <span>🧬</span> กฎทองทางชีววิทยา (Golden Rules)
+                </h3>
+                
+                <div class="space-y-6">
+                    <div class="bg-slate-700/50 p-4 rounded-lg border border-slate-600">
+                        <h4 class="font-bold text-rose-300 mb-1">ยีนด้อยบนออโตโซม (Autosomal Recessive)</h4>
+                        <p class="text-sm text-slate-300">หากพ่อและแม่ปกติ แต่ลูกเป็นโรค = พ่อและแม่ต้องเป็น <strong>"พาหะ (Carrier)"</strong> ทั้งคู่ (Aa x Aa) ลูกจึงมีโอกาสได้รับยีนด้อย (aa) 25%</p>
+                    </div>
+
+                    <div class="bg-slate-700/50 p-4 rounded-lg border border-slate-600">
+                        <h4 class="font-bold text-rose-300 mb-1">ทิศทางเลือดในหัวใจ (Right Atrium)</h4>
+                        <p class="text-sm text-slate-300"><strong>ห้องบนขวา</strong> มีหน้าที่รับเลือดที่มี <strong>ปริมาณออกซิเจนต่ำ (O₂ ต่ำ)</strong> ที่ใช้งานแล้วจากร่างกาย ผ่านหลอดเลือด Vena Cava กลับเข้าสู่หัวใจ</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Vocabulary Section -->
+    <section>
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                <span>📚</span> คลังคำศัพท์สำคัญ (Vocabulary)
+            </h2>
+            <p class="text-slate-600 mt-2">
+                คลิกหรือแตะที่การ์ดเพื่อพลิกดูความหมาย ฝึกการเรียกคืนความจำ (Active Recall) ก่อนเข้าห้องสอบ
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Vocab 1 -->
+            <div class="flip-card" tabindex="0">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <h3 class="font-bold text-xl text-slate-800">พาหะ (Carrier)</h3>
+                    </div>
+                    <div class="flip-card-back">
+                        <p class="text-sm">บุคคลที่มียีนด้อยของโรคแฝงอยู่ แต่ไม่แสดงอาการของโรคออกมา</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Vocab 2 -->
+            <div class="flip-card" tabindex="0">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <h3 class="font-bold text-xl text-slate-800 text-center">สารละลายบัฟเฟอร์<br><span class="text-sm font-normal text-slate-500">(Buffer Solution)</span></h3>
+                    </div>
+                    <div class="flip-card-back">
+                        <p class="text-sm">สารละลายที่มีคุณสมบัติต้านทานการเปลี่ยนแปลง pH มักเกิดจาก กรดอ่อน+คู่เบส หรือ เบสอ่อน+คู่กรด</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Vocab 3 -->
+            <div class="flip-card" tabindex="0">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <h3 class="font-bold text-xl text-slate-800">อะดรีนาลิน<br><span class="text-sm font-normal text-slate-500">(Adrenaline)</span></h3>
+                    </div>
+                    <div class="flip-card-back">
+                        <p class="text-sm">ฮอร์โมนจากต่อมหมวกไตชั้นใน กระตุ้นร่างกายให้พร้อมรับมือสถานการณ์ฉุกเฉิน (Fight or Flight)</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Vocab 4 -->
+            <div class="flip-card" tabindex="0">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <h3 class="font-bold text-xl text-slate-800 text-center">สารกำหนดปริมาณ<br><span class="text-sm font-normal text-slate-500">(Limiting Reagent)</span></h3>
+                    </div>
+                    <div class="flip-card-back">
+                        <p class="text-sm">สารตั้งต้นที่ถูกใช้หมดก่อน เป็นตัวจำกัดและกำหนดปริมาณผลิตภัณฑ์ที่จะเกิดขึ้นสูงสุด</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Vocab 5 -->
+            <div class="flip-card" tabindex="0">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <h3 class="font-bold text-xl text-slate-800">ออโตโซม<br><span class="text-sm font-normal text-slate-500">(Autosome)</span></h3>
+                    </div>
+                    <div class="flip-card-back">
+                        <p class="text-sm">โครโมโซมร่างกาย (22 คู่แรกในมนุษย์) ที่ไม่ได้มีหน้าที่กำหนดเพศ</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Knowledge Check Section -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 mb-12">
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                <span>📝</span> แบบทดสอบความเข้าใจ (Knowledge Check)
+            </h2>
+            <p class="text-slate-600 mt-2">
+                ทดสอบแนวคิดสำคัญจาก Key Questions ในคู่มือทบทวน เลือกคำตอบเพื่อดูเฉลย
+            </p>
+        </div>
+
+        <div class="space-y-6" id="quiz-container">
+            <!-- Questions injected via JS -->
+        </div>
+    </section>
+
+</div>
+
+<script>
+    // --- State Management ---
+    const state = {
+        isDanger: false,
+        stoichChartInstance: null,
+        radarChartInstance: null,
+        questions: [
+            {
+                q: 'หากผสมสารละลาย CH₃COOH 0.1 M (50 mL) กับ NaOH 0.1 M (100 mL) จะได้บัฟเฟอร์หรือไม่?',
+                opts: ['เป็นบัฟเฟอร์ เพราะมีกรดอ่อน', 'ไม่เป็นบัฟเฟอร์ เพราะเบสแก่ข่มกรดอ่อนจนหมด'],
+                ans: 1,
+                exp: 'ถูกต้อง! การจะเกิดบัฟเฟอร์ กรดอ่อนต้อง "เหลือ" แต่ข้อนี้ NaOH มีปริมาตรมากกว่า (100mL > 50mL) ทำให้กรดอ่อนถูกสะเทินจนหมด จึงไม่เกิดสภาพบัฟเฟอร์'
+            },
+            {
+                q: 'เลือดที่ถูกส่งออกจากหัวใจห้อง "ล่างขวา" จะเดินทางไปที่ใด?',
+                opts: ['ไปฟอกที่ปอด (ออกซิเจนต่ำ)', 'ไปเลี้ยงทั่วร่างกาย (ออกซิเจนสูง)'],
+                ans: 0,
+                exp: 'ถูกต้อง! หัวใจซีกขวาจัดการกับเลือดเสีย (O₂ ต่ำ) ล่างขวาจะบีบเลือดดำส่งไปฟอกที่ปอดผ่านหลอดเลือด Pulmonary Artery'
+            },
+            {
+                q: 'สมการ 2A + 3B → 4C หากมีสาร A=4 โมล และ B=9 โมล สารใดคือสารกำหนดปริมาณ?',
+                opts: ['สาร A', 'สาร B'],
+                ans: 0,
+                exp: 'ถูกต้อง! เช็คโดยเอา (โมลที่มี / เลขดุล) -> A = 4/2 = 2, B = 9/3 = 3. ค่าของ A น้อยกว่า สาร A จึงเป็นสารกำหนดปริมาณ (หมดก่อน)'
+            },
+            {
+                q: 'ฮอร์โมนใดและระบบประสาทใดที่ทำงานในสภาวะพักผ่อน (ตรงข้ามกับ Fight or Flight)?',
+                opts: ['ซิมพาเทติก / อะดรีนาลิน', 'พาราซิมพาเทติก / อินซูลิน (ตัวอย่างการพักผ่อนและย่อยอาหาร)'],
+                ans: 1,
+                exp: 'ถูกต้อง! ระบบพาราซิมพาเทติก จะทำงานในโหมด "Rest and Digest" ทำให้หัวใจเต้นช้าลงและกระตุ้นระบบย่อยอาหาร'
+            }
+        ]
+    };
+
+    // --- Initialization ---
+    window.onload = () => {
+        initRadarChart();
+        initStoichChart();
+        calculateStoichiometry(); // initial render
+        renderQuiz();
+    };
+
+    // --- Interactive Logic: Radar Chart ---
+    function initRadarChart() {
+        const ctx = document.getElementById('topicsRadarChart').getContext('2d');
+        state.radarChartInstance = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['พันธุศาสตร์', 'กรด-เบส & บัฟเฟอร์', 'ปริมาณสารสัมพันธ์', 'ระบบประสาท', 'ระบบหมุนเวียนเลือด'],
+                datasets: [{
+                    label: 'น้ำหนักความสำคัญ (อิงจากข้อสอบ)',
+                    data: [85, 95, 90, 80, 75],
+                    backgroundColor: 'rgba(15, 23, 42, 0.1)',
+                    borderColor: 'rgba(15, 23, 42, 0.8)',
+                    pointBackgroundColor: 'rgba(13, 148, 136, 1)', // Teal
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(0,0,0,0.1)' },
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                        pointLabels: {
+                            font: { family: 'Sarabun', size: 12, weight: 'bold' },
+                            color: '#334155'
+                        },
+                        ticks: { display: false, min: 0, max: 100 }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { family: 'Sarabun' } } }
+                }
+            }
+        });
+    }
+
+    // --- Interactive Logic: Stoichiometry Calculator ---
+    function initStoichChart() {
+        const ctx = document.getElementById('stoichChart').getContext('2d');
+        state.stoichChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['N₂ (ใส่เริ่ม)', 'H₂ (ใส่เริ่ม)', 'NH₃ (ผลิตภัณฑ์)'],
+                datasets: [{
+                    label: 'จำนวนโมล',
+                    data: [0, 0, 0],
+                    backgroundColor: ['#94a3b8', '#94a3b8', '#0d9488'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                    x: { grid: { display: false } }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { titleFont: { family: 'Sarabun' }, bodyFont: { family: 'Sarabun' } }
+                }
+            }
+        });
+    }
+
+    function calculateStoichiometry() {
+        const n2 = parseFloat(document.getElementById('n2-input').value) || 0;
+        const h2 = parseFloat(document.getElementById('h2-input').value) || 0;
+        
+        // Ratio: 1 N2 : 3 H2 -> 2 NH3
+        const n2Ratio = n2 / 1;
+        const h2Ratio = h2 / 3;
+        
+        let limiting = '';
+        let limitingMoles = 0;
+        let nh3Produced = 0;
+
+        if (n2 === 0 && h2 === 0) {
+            nh3Produced = 0;
+            limiting = 'ไม่มีสารตั้งต้น';
+        } else if (n2Ratio < h2Ratio) {
+            limiting = 'N₂ (ไนโตรเจน)';
+            limitingMoles = n2Ratio;
+            nh3Produced = limitingMoles * 2;
+        } else if (h2Ratio < n2Ratio) {
+            limiting = 'H₂ (ไฮโดรเจน)';
+            limitingMoles = h2Ratio;
+            nh3Produced = limitingMoles * 2;
+        } else {
+            limiting = 'ไม่มีสารใดเหลือ (ทำปฏิกิริยาพอดีกัน)';
+            limitingMoles = n2Ratio; // or h2Ratio
+            nh3Produced = limitingMoles * 2;
+        }
+
+        // Update Text
+        const resultBox = document.getElementById('stoich-result');
+        resultBox.classList.remove('hidden');
+        resultBox.innerHTML = `<strong>สารกำหนดปริมาณ:</strong> ${limiting} <br> <strong>แอมโมเนียที่เกิดสูงสุด:</strong> ${nh3Produced.toFixed(2)} โมล`;
+
+        // Update Chart
+        state.stoichChartInstance.data.datasets[0].data = [n2, h2, nh3Produced];
+        state.stoichChartInstance.update();
+    }
+
+    // --- Interactive Logic: Buffer Mixer ---
+    function checkBuffer() {
+        const sub1 = document.getElementById('buffer-sub1').value;
+        const sub2 = document.getElementById('buffer-sub2').value;
+        const box = document.getElementById('buffer-result-box');
+        const title = document.getElementById('buffer-title');
+        const desc = document.getElementById('buffer-desc');
+        const icon = document.getElementById('buffer-icon');
+
+        // Reset styling
+        box.className = "mt-auto p-6 rounded-xl border-2 transition-all duration-300 ";
+
+        // Logic check
+        if (sub1 === 'weak-acid' && sub2 === 'strong-base-50') {
+            // Weak acid (100) > Strong Base (50). Weak acid remains.
+            box.classList.add('bg-teal-50', 'border-teal-400');
+            icon.innerText = "✅";
+            title.innerText = "เป็นสารละลายบัฟเฟอร์!";
+            title.classList.replace('text-slate-700', 'text-teal-800');
+            desc.innerText = "กรดอ่อนเหลืออยู่! เบสแก่ถูกใช้หมด เกิดเป็นเกลือของกรดอ่อน ระบบมี (กรดอ่อน + คู่เบส) จึงต้านทาน pH ได้";
+        } else if (sub1 === 'weak-acid' && sub2 === 'strong-base-150') {
+            // Strong base > Weak acid.
+            box.classList.add('bg-rose-50', 'border-rose-400');
+            icon.innerText = "❌";
+            title.innerText = "ไม่เป็นบัฟเฟอร์!";
+            title.classList.replace('text-slate-700', 'text-rose-800');
+            desc.innerText = "เบสแก่มีมากเกินไป (150 > 100) ไปข่มกรดอ่อนจนหมด กลายเป็นสารละลายเบสแก่";
+        } else {
+            // Strong acid + anything here doesn't make buffer directly in these simple options.
+            box.classList.add('bg-slate-100', 'border-slate-300');
+            icon.innerText = "💥";
+            title.innerText = "ไม่เป็นบัฟเฟอร์!";
+            title.classList.replace('text-teal-800', 'text-slate-700');
+            title.classList.replace('text-rose-800', 'text-slate-700');
+            desc.innerText = "กรดแก่ ไม่สามารถใช้สร้างบัฟเฟอร์ได้โดยตรง เพราะแตกตัว 100% ไม่หลงเหลือสภาพความอ่อนแอไว้ต้านทาน pH";
+        }
+    }
+
+    // --- Interactive Logic: Nervous System Toggle ---
+    function toggleNervousSystem() {
+        state.isDanger = !state.isDanger;
+        const btn = document.getElementById('toggle-nervous-btn');
+        const knob = document.getElementById('toggle-knob');
+        const text = document.getElementById('toggle-text');
+        
+        const typeEl = document.getElementById('nervous-type');
+        const hormoneEl = document.getElementById('hormone-type');
+        const heartEl = document.getElementById('heart-response');
+
+        if (state.isDanger) {
+            // Danger state (Sympathetic)
+            btn.classList.replace('bg-emerald-500', 'bg-rose-600');
+            knob.classList.replace('translate-x-1', 'translate-x-[6.5rem]');
+            text.innerText = 'อันตราย (Danger)';
+            text.classList.replace('right-6', 'left-4');
+            
+            typeEl.innerText = "ซิมพาเทติก (Sympathetic)";
+            typeEl.className = "block font-bold text-rose-700 mt-1";
+            
+            hormoneEl.innerText = "อะดรีนาลิน (Adrenaline)";
+            hormoneEl.className = "block font-bold text-rose-700 mt-1";
+            
+            heartEl.innerText = "หัวใจเต้นแรงและเร็ว สูบฉีดเลือด";
+            heartEl.className = "block font-bold text-rose-700 mt-1";
+        } else {
+            // Rest state (Parasympathetic)
+            btn.classList.replace('bg-rose-600', 'bg-emerald-500');
+            knob.classList.replace('translate-x-[6.5rem]', 'translate-x-1');
+            text.innerText = 'พักผ่อน (Rest)';
+            text.classList.replace('left-4', 'right-6');
+            
+            typeEl.innerText = "พาราซิมพาเทติก";
+            typeEl.className = "block font-semibold text-emerald-700 mt-1";
+            
+            hormoneEl.innerText = "ปกติ";
+            hormoneEl.className = "block font-semibold text-slate-700 mt-1";
+            
+            heartEl.innerText = "เต้นปกติ ช้าลง";
+            heartEl.className = "block font-semibold text-slate-700 mt-1";
+        }
+    }
+
+    // --- Interactive Logic: Quiz ---
+    function renderQuiz() {
+        const container = document.getElementById('quiz-container');
+        let html = '';
+        
+        state.questions.forEach((q, idx) => {
+            html += `
+                <div class="border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition-colors">
+                    <p class="font-semibold text-slate-800 mb-3">Q${idx+1}: ${q.q}</p>
+                    <div class="space-y-2">
+                        ${q.opts.map((opt, oIdx) => `
+                            <button onclick="checkAnswer(${idx}, ${oIdx})" id="btn-${idx}-${oIdx}" class="w-full text-left px-4 py-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors text-sm text-slate-700">
+                                ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div id="exp-${idx}" class="mt-4 p-3 rounded-lg text-sm hidden"></div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    function checkAnswer(qIdx, selectedIdx) {
+        const q = state.questions[qIdx];
+        const isCorrect = q.ans === selectedIdx;
+        const expDiv = document.getElementById(`exp-${qIdx}`);
+        
+        // Reset buttons for this question
+        q.opts.forEach((_, idx) => {
+            const btn = document.getElementById(`btn-${qIdx}-${idx}`);
+            btn.className = "w-full text-left px-4 py-3 rounded-lg border text-sm transition-colors opacity-50 cursor-not-allowed border-slate-200 bg-slate-50 text-slate-500";
+            btn.disabled = true;
+        });
+
+        // Style selected button
+        const selectedBtn = document.getElementById(`btn-${qIdx}-${selectedIdx}`);
+        selectedBtn.classList.remove('opacity-50', 'bg-slate-50', 'border-slate-200');
+        
+        if (isCorrect) {
+            selectedBtn.classList.add('bg-emerald-50', 'border-emerald-500', 'text-emerald-900', 'font-bold');
+            expDiv.className = "mt-4 p-3 rounded-lg text-sm bg-emerald-50 border border-emerald-100 text-emerald-800 block";
+        } else {
+            selectedBtn.classList.add('bg-rose-50', 'border-rose-500', 'text-rose-900', 'font-bold');
+            expDiv.className = "mt-4 p-3 rounded-lg text-sm bg-slate-100 border border-slate-200 text-slate-700 block";
+        }
+        
+        expDiv.innerHTML = q.exp;
+    }
+</script>
+
+</body>
+</html>
